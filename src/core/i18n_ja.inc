@@ -282,3 +282,4 @@
 {"Affiche à droite le nombre de frappes de chaque touche (K1, K2).", "各キー（K1、K2）の押下回数を右側に表示します。"},
 {"Tablette : écran = aire de jeu", "タブレット：画面＝プレイエリア"},
 {"Toute la surface de la tablette (ou de l'écran) correspond à l'aire de jeu, comme le pavé tactile en absolu. Pratique avec une tablette graphique sans réglage de zone.", "タブレット（または画面）の全面がプレイエリアに対応します。タッチパッドの絶対モードと同様。エリア設定のないペンタブに便利です。"},
+{"Échap deux fois : quitter tout de suite", "Esc を2回押すとすぐに終了"},
