@@ -21,8 +21,10 @@ controller-first interface inspired by osu!lazer.
   on-screen keyboard, original-language metadata (Japanese...).
 - Storyboards.
 - osu! skins (.osk) and two built-in styles (clean, triangles).
-- Controller (sticks, touchpad as a pointer in menus), USB keyboard and mouse; remappable keys.
-- English and French (follows the console language).
+- Controller (sticks, touchpad as a pointer in menus); keyboard, mouse and graphics tablet on desktop
+  (USB keyboard and mouse on PS5: coming soon); remappable keys.
+- "Pro" options: instafade, misses-only judgements, unstable rate, key overlay.
+- English, French and Japanese (follows the system language).
 - Star rating and pp computed locally (osu!lazer algorithms), live pp counter.
 - 60 / 120 Hz on PS5; V-Sync or frame limiter on desktop. Local scores, automatic audio offset correction.
 
@@ -106,7 +108,7 @@ Version alpha.
 
 **Installation :** télécharger `PPSA99731.zip` dans les [releases](../../releases), copier le
 dossier `PPSA99731` sur la console et l'enregistrer avec un gestionnaire d'applis en dossier
-(ShadowMountPlus, etc.). Le jeu est en français si la console l'est, sinon en anglais.
+(ShadowMountPlus, etc.). Le jeu suit la langue de la console (français, anglais ou japonais).
 
 Maps : `/data/rhythm-ps5/songs` · Skins : `/data/rhythm-ps5/skins` · Sons :
 `/data/rhythm-ps5/sons`.

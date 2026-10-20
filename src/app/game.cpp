@@ -301,6 +301,13 @@ void Game::openOverlay(std::unique_ptr<Screen> overlay) {
     overlay_->enter();
 }
 
+void Game::showSet(int set) {
+    select(set, 0, true);
+    closeOverlay();
+    if (screen_ && screen_->songSelect()) jumpToSet = set;
+    else goTo(makeSongSelect());
+}
+
 void Game::closeOverlay() {
     if (!overlay_) return;
     overlay_->forward = false;
@@ -339,6 +346,10 @@ void Game::handleToolbar(const UiInput &in) {
         break;
     case lz::Toolbar::Download:
         if (!overlay_) openOverlay(makeDownload());
+        break;
+    case lz::Toolbar::Music:
+        nowPlayingOpen_ = !nowPlayingOpen_;
+        nowPlaying_.go(ctx.now * 1000, nowPlayingOpen_ ? 1 : 0, 300, anim::Ease::OutQuint);
         break;
     case lz::Toolbar::Home:
         if (overlay_) closeOverlay();
@@ -518,13 +529,14 @@ void Game::drawBackground() {
     const bool haveSharp = bgCurrent_.id || bgPrevious_.id;
     // Version nette en dessous, version floutée par-dessus selon le flou demandé.
     if (blur < 1 || !bgBlurCurrent_.id) {
-        draw(bgPrevious_, 1 - k);
-        draw(bgCurrent_, bgPrevious_.id ? 1.0f : k);
+        // Fondu enchaîné : l'ancienne image reste pleine dessous, la nouvelle apparaît dessus.
+        draw(bgPrevious_, bgCurrent_.id ? 1.0f : 1 - k);
+        draw(bgCurrent_, k);
     }
     if (blur > 0 || !haveSharp) {
         const float a = haveSharp ? blur : 1;
-        draw(bgBlurPrevious_, (1 - kb) * a);
-        draw(bgBlurCurrent_, (bgBlurPrevious_.id ? 1.0f : kb) * a);
+        draw(bgBlurPrevious_, (bgBlurCurrent_.id ? 1.0f : 1 - kb) * a);
+        draw(bgBlurCurrent_, kb * a);
     }
     b.rect(0, 0, kVW, kVH, gfx::rgba(0, 0, 0, static_cast<uint8_t>(std::clamp(bgDim_.at(t), 0.0f, 1.0f) * 255)));
 }
@@ -556,6 +568,99 @@ void volumeMeters(VolumeMeter out[3]) {
     out[2] = {kVW - 90 * U, by + 10 * U, 42 * U, "Musique"};
 }
 }  // namespace
+
+// --- Lecture en cours (bouton musique de la barre du haut) --------------------------
+namespace {
+struct NowPlayingLayout {
+    float x, y, w, h;
+    float bx[3], by, br;  // boutons précédent / lecture / suivant
+};
+NowPlayingLayout nowPlayingLayout(float top) {
+    const float U = lz::U;
+    NowPlayingLayout l;
+    l.w = 420 * U;
+    l.h = 150 * U;
+    l.x = kVW - l.w - 10 * U;
+    l.y = top + 8 * U;
+    l.by = l.y + l.h - 34 * U;
+    l.br = 18 * U;
+    l.bx[0] = l.x + l.w / 2 - 56 * U;
+    l.bx[1] = l.x + l.w / 2;
+    l.bx[2] = l.x + l.w / 2 + 56 * U;
+    return l;
+}
+}  // namespace
+
+bool Game::handleNowPlaying(const UiInput &in) {
+    if (!nowPlayingOpen_) return false;
+    const NowPlayingLayout l = nowPlayingLayout(toolbar.bottom(ctx));
+    if (in.back) {
+        nowPlayingOpen_ = false;
+        nowPlaying_.go(ctx.now * 1000, 0, 300, anim::Ease::OutQuint);
+        return true;
+    }
+    if (!in.mouseClick) return false;
+    for (int i = 0; i < 3; ++i) {
+        const float dx = in.mouseX - l.bx[i], dy = in.mouseY - l.by;
+        if (dx * dx + dy * dy > (l.br + 6 * lz::U) * (l.br + 6 * lz::U)) continue;
+        ctx.play(sfx_.uiSelect, 0.7f);
+        const int n = static_cast<int>(library_.sets().size());
+        if (i == 1) {
+            if (music_.playing()) music_.pause();
+            else if (music_.loaded()) music_.resume();
+            else playPreview();
+        } else if (n > 0) {
+            // Morceau précédent / suivant de la bibliothèque.
+            const int next = ((selectedSet < 0 ? 0 : selectedSet) + (i == 2 ? 1 : n - 1)) % n;
+            select(next, 0, true);
+        }
+        return true;
+    }
+    // Clic hors du panneau (et hors de la barre du haut, qui gère son bouton) : il se
+    // referme, et le clic sert quand même à l'écran.
+    if (in.mouseY > toolbar.bottom(ctx) && !(in.mouseX >= l.x && in.mouseX < l.x + l.w && in.mouseY >= l.y && in.mouseY < l.y + l.h)) {
+        nowPlayingOpen_ = false;
+        nowPlaying_.go(ctx.now * 1000, 0, 300, anim::Ease::OutQuint);
+        return false;
+    }
+    return true;
+}
+
+void Game::drawNowPlaying() {
+    const float k = nowPlaying_.at(ctx.now * 1000);
+    if (k <= 0.001f) return;
+    const float U = lz::U;
+    const NowPlayingLayout l = nowPlayingLayout(toolbar.bottom(ctx));
+    gfx::SpriteBatch &b = batch_;
+    b.pushTransform(0, (1 - k) * -20 * U, 1, k);
+    b.shadow(l.x, l.y, l.w, l.h, 12 * U, 16 * U, gfx::rgba(0, 0, 0, 120));
+    b.roundRect(l.x, l.y, l.w, l.h, 12 * U, lz::hex(0x22232a));
+    if (const gfx::Texture *th = thumbnail(selectedSet)) {
+        const float ta = static_cast<float>(th->width) / static_cast<float>(th->height), aspect = l.w / l.h;
+        const float cut = std::max(0.0f, (1 - ta / aspect) / 2);
+        b.roundRectTex(*th, l.x, l.y, l.w, l.h, 12 * U, gfx::rgba(255, 255, 255, 90), 0, cut, 1, 1 - cut);
+    }
+    const game::SetInfo *s = currentSet();
+    const std::string title = s ? s->shownTitle(settings_.originalMetadata) : i18n::tr("Aucune musique");
+    const std::string artist = s ? s->shownArtist(settings_.originalMetadata) : "";
+    lz::text(ctx, fonts_.semibold, l.x + l.w / 2, l.y + 16 * U, 20 * U, gfx::rgba(255, 255, 255), introTrackPlaying_ ? "triangles" : title,
+             gfx::Align::Center, l.w - 30 * U, true);
+    lz::text(ctx, fonts_.regular, l.x + l.w / 2, l.y + 42 * U, 15 * U, gfx::rgba(220, 220, 230), introTrackPlaying_ ? "cYsmix" : artist,
+             gfx::Align::Center, l.w - 30 * U, true);
+    // Progression.
+    const double len = music_.lengthSeconds();
+    const float p = len > 0 ? static_cast<float>(std::clamp(music_.time(mixer_) / len, 0.0, 1.0)) : 0;
+    const float px = l.x + 20 * U, pw = l.w - 40 * U, py = l.y + 74 * U;
+    b.roundRect(px, py, pw, 4 * U, 2 * U, gfx::rgba(255, 255, 255, 50));
+    b.roundRect(px, py, std::max(4 * U, pw * p), 4 * U, 2 * U, lz::col::pink1);
+    const char *glyphs[3] = {fa::backward, music_.playing() ? fa::pause : fa::play, fa::forward};
+    for (int i = 0; i < 3; ++i) {
+        const bool hov = lastInput_.mouseActive && std::hypot(lastInput_.mouseX - l.bx[i], lastInput_.mouseY - l.by) < l.br + 6 * U;
+        b.circle(l.bx[i], l.by, l.br, hov ? gfx::rgba(255, 255, 255, 50) : gfx::rgba(255, 255, 255, 20));
+        lz::icon(ctx, glyphs[i], l.bx[i], l.by, i == 1 ? 18 * U : 14 * U, gfx::rgba(255, 255, 255));
+    }
+    b.popTransform();
+}
 
 void Game::handleVolume(UiInput &in, const plat::InputState &raw) {
     const bool alt = raw.keyboard.keys[0xE2] || raw.keyboard.keys[0xE6];
@@ -741,10 +846,20 @@ UiInput Game::buildInput(const plat::InputState &raw) {
     const uint32_t hitMask = settings_.padHitMask ? settings_.padHitMask : Settings::defaultPadHitMask();
     const int k1 = std::clamp(settings_.keyHit1, 4, 231), k2 = std::clamp(settings_.keyHit2, 4, 231);
     const uint32_t mouseMask = settings_.mouseButtonsInGame ? 3u : 0u;
-    for (uint32_t b = p.buttons & ~pp.buttons & hitMask; b; b &= b - 1) ++in.hitPresses;
-    in.hitPresses += keyPressed(k1) + (k2 != k1 ? keyPressed(k2) : 0);
-    in.hitPresses += ((raw.mouse.buttons & 1u & mouseMask) && !(prev_.mouse.buttons & 1u)) +
-                     ((raw.mouse.buttons & 2u & mouseMask) && !(prev_.mouse.buttons & 2u));
+    // Touche 1 / touche 2 : la première et la deuxième touche, les clics gauche et droit,
+    // et les boutons de la manette en alternance.
+    int padIndex = 0;
+    for (uint32_t m = hitMask; m; m &= m - 1, ++padIndex) {
+        const uint32_t bit = m & (~m + 1);
+        const bool second = padIndex % 2 == 1;
+        if (p.buttons & ~pp.buttons & bit) ++(second ? in.key2Presses : in.key1Presses);
+        if (p.buttons & bit) in.hitKeysHeld |= second ? 2u : 1u;
+    }
+    in.key1Presses += keyPressed(k1) + ((raw.mouse.buttons & 1u & mouseMask) && !(prev_.mouse.buttons & 1u));
+    in.key2Presses += (k2 != k1 ? keyPressed(k2) : 0) + ((raw.mouse.buttons & 2u & mouseMask) && !(prev_.mouse.buttons & 2u));
+    in.hitPresses = in.key1Presses + in.key2Presses;
+    if (raw.keyboard.keys[k1] || (raw.mouse.buttons & 1u & mouseMask)) in.hitKeysHeld |= 1u;
+    if (raw.keyboard.keys[k2] || (raw.mouse.buttons & 2u & mouseMask)) in.hitKeysHeld |= 2u;
     in.hitHeld = (p.buttons & hitMask) || raw.keyboard.keys[k1] || raw.keyboard.keys[k2] || (raw.mouse.buttons & mouseMask);
     in.mouseClick = (raw.mouse.buttons & 1u) && !(prev_.mouse.buttons & 1u);
 
@@ -756,6 +871,14 @@ UiInput Game::buildInput(const plat::InputState &raw) {
             cursorY_ = raw.mouse.y * kVH / static_cast<float>(std::max(1, plat::height()));
             pointerX_ = cursorX_;
             pointerY_ = cursorY_;
+#if !defined(__PROSPERO__)
+            if (settings_.tabletPlayfield && screen_ && screen_->gameplay() && !overlay_) {
+                // Tablette : tout l'écran = l'aire de jeu agrandie de 10 %, comme le pavé tactile.
+                const float fw = 512 * kVH / 480 * 1.1f, fh = 384 * kVH / 480 * 1.1f;
+                cursorX_ = kVW / 2 - fw / 2 + cursorX_ / kVW * fw;
+                cursorY_ = kVH / 2 + 8 * kVH / 480 - fh / 2 + cursorY_ / kVH * fh;
+            }
+#endif
             in.mouseMoved = true;
             mouseActive_ = true;
             padPointer_ = false;
@@ -957,6 +1080,7 @@ void Game::frame(const plat::InputState &raw, double now) {
         overlay_->update(in);
     } else {
         if (screen_ && !screen_->gameplay()) handleToolbar(in);
+        if (handleNowPlaying(in)) in = UiInput{};  // le panneau a pris le clic
         if (screen_) screen_->update(in);
     }
 
@@ -977,6 +1101,7 @@ void Game::frame(const plat::InputState &raw, double now) {
     if (overlayLeaving_) overlayLeaving_->render();
     if (overlay_) overlay_->render();
     toolbar.draw(ctx);
+    drawNowPlaying();
     drawVolume();
     osk_.draw(ctx);
     // Notification temporaire.

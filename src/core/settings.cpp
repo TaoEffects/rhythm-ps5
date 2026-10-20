@@ -39,6 +39,11 @@ bool Settings::load(const std::string &path) {
         else if (key == "show_fps") showFps = i != 0;
         else if (key == "fullscreen") fullscreen = i != 0;
         else if (key == "pp_counter") showPpCounter = i != 0;
+        else if (key == "instafade") instafade = i != 0;
+        else if (key == "misses_only") missesOnly = i != 0;
+        else if (key == "show_ur") showUr = i != 0;
+        else if (key == "key_overlay") keyOverlay = i != 0;
+        else if (key == "tablet_playfield") tabletPlayfield = i != 0;
         else if (key == "hit_error_bar") showHitErrorBar = i != 0;
         else if (key == "master_volume") masterVolume = clampf(f, 0, 1);
         else if (key == "music_volume") musicVolume = clampf(f, 0, 1);
@@ -99,6 +104,11 @@ bool Settings::save(const std::string &path) const {
     put("show_fps", "%d", showFps ? 1 : 0);
     put("fullscreen", "%d", fullscreen ? 1 : 0);
     put("pp_counter", "%d", showPpCounter ? 1 : 0);
+    put("instafade", "%d", instafade ? 1 : 0);
+    put("misses_only", "%d", missesOnly ? 1 : 0);
+    put("show_ur", "%d", showUr ? 1 : 0);
+    put("key_overlay", "%d", keyOverlay ? 1 : 0);
+    put("tablet_playfield", "%d", tabletPlayfield ? 1 : 0);
     put("hit_error_bar", "%d", showHitErrorBar ? 1 : 0);
     put("master_volume", "%.2f", static_cast<double>(masterVolume));
     put("music_volume", "%.2f", static_cast<double>(musicVolume));

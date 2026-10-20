@@ -200,13 +200,14 @@ public:
         // Bande des boutons (fond #323232 sur toute la largeur, 100 u de haut).
         const float strip = stripAlpha_.at(t);
         const float sy = stripScaleY_.at(t);
-        if (strip > 0.001f)
-            b.rect(0, kVH / 2 - kBtnH / 2 * sy, kVW, kBtnH * sy, alpha(hex(0x323232), strip));
-        // Parallaxe des boutons (0,01).
+        // Parallaxe des boutons (0,01) ; la bande suit, et déborde des bords pour ne
+        // jamais laisser voir ses extrémités.
         const UiInput &in = game.input();
         const bool para = in.mouseActive && c.settings->menuParallax;
         const float px = para ? -(in.mouseX - kVW / 2) * 0.01f : 0;
         const float py = para ? -(in.mouseY - kVH / 2) * 0.01f : 0;
+        if (strip > 0.001f)
+            b.rect(-100 * U + px, kVH / 2 - kBtnH / 2 * sy + py, kVW + 200 * U, kBtnH * sy, alpha(hex(0x323232), strip));
         b.pushTransform(slide_.at(t) + px, py);
         // Les boutons de gauche sont dessinés au-dessus de ceux de droite (ordre inverse).
         for (int i = 3; i >= 0; --i) drawButton(i);

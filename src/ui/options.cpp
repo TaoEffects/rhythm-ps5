@@ -179,6 +179,20 @@ public:
             }
         }
         scroll_ = anim::damp(scroll_, target_, 60, c.dt * 1000);
+        // Animations : ouverture de l'aide (manette / clavier) et info-bulle (souris).
+        expand_.resize(items_.size(), 0.0f);
+        for (size_t i = 0; i < expand_.size(); ++i) {
+            const float goal = static_cast<int>(i) == cursor_ && !in.mouseActive ? 1.0f : 0.0f;
+            expand_[i] = anim::damp(expand_[i], goal, 45, c.dt * 1000);
+        }
+        int hovered = -1;
+        if (in.mouseActive)
+            for (int i = 0; i < n; ++i)
+                if (in.hover(x0 + kSidebarW, rowY(i), kPanelW, rowH(i))) hovered = i;
+        if (hovered != tooltipItem_ && hovered >= 0) tooltipItem_ = hovered, tooltipA_ = 0;
+        tooltipA_ = anim::damp(tooltipA_, hovered >= 0 ? 1.0f : 0.0f, 40, c.dt * 1000);
+        tooltipX_ = in.mouseX;
+        tooltipY_ = in.mouseY;
     }
 
     void render() override {
@@ -249,9 +263,30 @@ public:
                 icon(c, fa::chevron_right, cx + cw - 16 * U, dy + dh / 2, 12 * U, pal.light2);
             }
             helpWidth_ = cw;
-            if (sel && it.help) wrap(it.help, cx, y + h + 6 * U, cw, 13 * U, pal.content2);
+            const float open = i < expand_.size() ? expand_[i] : 0.0f;
+            if (it.help && open > 0.01f) {
+                b.pushAlpha(open);
+                wrap(it.help, cx, y + h + 6 * U, cw, 13 * U, pal.content2);
+                b.popTransform();
+            }
         }
         b.popClip();
+        // Info-bulle de l'élément survolé à la souris (l'aide ne pousse pas la liste).
+        if (tooltipA_ > 0.01f && tooltipItem_ >= 0 && tooltipItem_ < static_cast<int>(items_.size()) &&
+            items_[static_cast<size_t>(tooltipItem_)].help) {
+            const char *help = items_[static_cast<size_t>(tooltipItem_)].help;
+            const float tw = 340 * U, ts = 13 * U;
+            const int lines = wrap(help, 0, 0, tw - 24 * U, ts, 0, false);
+            const float th = 20 * U + static_cast<float>(lines) * ts * 1.35f;
+            float tx = tooltipX_ + 18 * U, ty = tooltipY_ + 18 * U;
+            if (tx + tw > kVW - 8 * U) tx = tooltipX_ - tw - 12 * U;
+            if (ty + th > kVH - 8 * U) ty = tooltipY_ - th - 12 * U;
+            b.pushAlpha(tooltipA_);
+            b.shadow(tx, ty, tw, th, 8 * U, 10 * U, alpha(col::black, 0.4f));
+            b.roundRect(tx, ty, tw, th, 8 * U, alpha(pal.background6, 0.96f));
+            wrap(help, tx + 12 * U, ty + 10 * U, tw - 24 * U, ts, pal.content2);
+            b.popTransform();
+        }
         // Barre latérale d'icônes.
         b.rect(x0, top, kSidebarW, kVH - top, pal.background5);
         const int cur = sectionIndex(items_[static_cast<size_t>(cursor_)].section);
@@ -291,7 +326,9 @@ private:
                 last = items_[static_cast<size_t>(k)].section;
                 y += 80 * lz::U;
             }
-            if (k < i) y += rowH(k) + (k == cursor_ ? helpSpace(k) : 8 * lz::U);
+            // L'aide s'ouvre progressivement sous l'élément choisi (manette / clavier).
+            const float open = k < static_cast<int>(expand_.size()) ? expand_[static_cast<size_t>(k)] : (k == cursor_ ? 1.0f : 0.0f);
+            if (k < i) y += rowH(k) + 8 * lz::U + (helpSpace(k) - 8 * lz::U) * open;
         }
         return y;
     }
@@ -331,23 +368,17 @@ private:
     int wrap(const char *text, float x, float y, float width, float size, uint32_t color, bool draw = true) const {
         Context &c = game.ctx;
         int lines = 0;
-        std::string line, word;
-        const std::string s = std::string(i18n::tr(text)) + " ";
-        for (char ch : s) {
-            if (ch != ' ') {
-                word += ch;
-                continue;
-            }
-            const std::string candidate = line.empty() ? word : line + " " + word;
+        std::string line;
+        for (const lz::WrapToken &w : lz::wrapTokens(i18n::tr(text))) {
+            const std::string candidate = line.empty() ? w.text : line + (w.space ? " " : "") + w.text;
             if (c.fonts->regular.measure(size, candidate.c_str()) > width && !line.empty()) {
                 if (draw) c.fonts->regular.draw(*c.batch, x, y, size, color, line.c_str());
                 y += size * 1.35f;
                 ++lines;
-                line = word;
+                line = w.text;
             } else {
                 line = candidate;
             }
-            word.clear();
         }
         if (!line.empty()) {
             if (draw) c.fonts->regular.draw(*c.batch, x, y, size, color, line.c_str());
@@ -467,6 +498,12 @@ private:
                s.showPpCounter);
         toggle("Affichage", "Barre d'erreur de frappe", "Affiche en bas de l'écran si tes frappes sont en avance ou en retard.",
                s.showHitErrorBar);
+        toggle("Affichage", "Instafade", "Les cercles frappés disparaissent sur-le-champ, sans animation, comme les skins des joueurs "
+               "confirmés : l'écran reste lisible sur les flux rapides.", s.instafade);
+        toggle("Affichage", "Ratés seulement", "N'affiche plus les 100 et les 50 pendant la partie, seulement les ratés.", s.missesOnly);
+        toggle("Affichage", "Taux d'instabilité (UR)", "Régularité de tes frappes, sous la barre d'erreur : plus c'est bas, mieux "
+               "c'est.", s.showUr);
+        toggle("Affichage", "Compteur de touches", "Affiche à droite le nombre de frappes de chaque touche (K1, K2).", s.keyOverlay);
         slider("Interface", "Taille de l'interface", "Agrandit ou réduit les menus (80 à 130 %).", s.uiScale, 0.8f, 1.3f, 0.05f,
                [&s] { return pct(s.uiScale); });
         items_.push_back({"Interface", "Thème", "Le thème moderne s'inspire d'osu!lazer. Les thèmes « stable » et « classique » "
@@ -475,11 +512,13 @@ private:
                           [this](int) { game.toast("Les thèmes « stable » et « classique » arrivent bientôt"); }, nullptr, nullptr});
         items_.push_back({"Interface", "Langue", "Langue de l'interface.", Kind::Choice,
                           [&s] {
-                              return std::string(s.language == 1 ? "Français" : s.language == 2 ? "English"
-                                                                                                : "Automatique (langue de la console)");
+                              return std::string(s.language == 1   ? "Français"
+                                                 : s.language == 2 ? "English"
+                                                 : s.language == 3 ? "日本語"
+                                                                   : "Automatique (langue de la console)");
                           },
                           [&s](int dir) {
-                              s.language = (s.language + (dir < 0 ? 2 : 1)) % 3;
+                              s.language = (s.language + (dir < 0 ? 3 : 1)) % 4;
                               i18n::setLang(i18n::resolve(s.language, plat::systemLanguage()));
                           },
                           nullptr, nullptr});
@@ -525,6 +564,11 @@ private:
                           "déplace le curseur comme un trackpad.",
                           Kind::Choice, [&s] { return std::string(s.touchpadAbsolute ? "Absolu" : "Relatif"); },
                           [&s](int) { s.touchpadAbsolute = !s.touchpadAbsolute; }, nullptr, nullptr});
+#if !defined(__PROSPERO__)
+        toggle("Commandes", "Tablette : écran = aire de jeu",
+               "Toute la surface de la tablette (ou de l'écran) correspond à l'aire de jeu, comme le pavé tactile en "
+               "absolu. Pratique avec une tablette graphique sans réglage de zone.", s.tabletPlayfield);
+#endif
         slider("Commandes", "Vitesse du curseur (stick)",
                "Vitesse du curseur quand le stick gauche est poussé à fond. Le stick droit donne un mouvement fin.", s.cursorSpeed, 300,
                4000, 100, [&s] { return std::to_string(static_cast<int>(s.cursorSpeed)); });
@@ -565,7 +609,10 @@ private:
     }
 
     std::vector<Item> items_;
-    mutable float helpWidth_ = 300;  // largeur du texte d'aide (mise à jour au rendu)
+    mutable float helpWidth_ = 300;
+    std::vector<float> expand_;  // ouverture de l'aide de chaque élément (0..1)
+    int tooltipItem_ = -1;
+    float tooltipA_ = 0, tooltipX_ = 0, tooltipY_ = 0;  // largeur du texte d'aide (mise à jour au rendu)
     std::deque<std::string> labels_;  // libellés construits (adresses stables)
     std::vector<std::string> sections_;
     int cursor_ = 0;
