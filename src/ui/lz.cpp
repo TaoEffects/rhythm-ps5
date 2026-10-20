@@ -558,8 +558,13 @@ void Toolbar::draw(Context &c) {
     b.rect(0, y, kVW, height(), hex(0x1a1a1a));
     bx_[0] = 0;
     bx_[1] = height();
-    bx_[2] = kVW - height() * 2 - 120 * U;
-    bx_[3] = kVW - height() - 120 * U;
+#if defined(__PROSPERO__)
+    const float rightPad = 8 * U;  // pas d'horloge sur PS5
+#else
+    const float rightPad = c.fonts->semibold.measure(18 * U, "00:00") + 36 * U;
+#endif
+    bx_[2] = kVW - rightPad - height() * 2;
+    bx_[3] = kVW - rightPad - height();
     const char *glyphs[4] = {fa::gear, fa::house, fa::download, fa::music};
     const char *tips[4] = {"Options", "Accueil", "Télécharger des maps", "Musique"};
     for (int i = 0; i < 4; ++i) {

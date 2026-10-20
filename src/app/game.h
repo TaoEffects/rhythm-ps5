@@ -181,6 +181,10 @@ private:
     void handleToolbar(const UiInput &in);
     void handleVolume(UiInput &in, const plat::InputState &raw);
     void drawVolume();
+    bool handleNowPlaying(const UiInput &in);
+    void drawNowPlaying();
+    bool nowPlayingOpen_ = false;
+    anim::Tween nowPlaying_{0};
     double volumeUntil_ = 0;
     int volumeSelected_ = 1;
     bool volumeDirty_ = false;

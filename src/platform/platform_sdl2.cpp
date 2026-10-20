@@ -86,6 +86,8 @@ bool init(const InitParams &params) {
         LOG("sdl2: contexte OpenGL 3.3 core impossible: %s", SDL_GetError());
         return false;
     }
+    // Le jeu dessine son propre curseur : celui du système est masqué dans la fenêtre.
+    SDL_ShowCursor(SDL_DISABLE);
 #if defined(_WIN32)
     if (!gl::loadFunctions([](const char *name) { return SDL_GL_GetProcAddress(name); })) return false;
 #endif
