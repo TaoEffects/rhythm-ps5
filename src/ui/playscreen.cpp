@@ -273,6 +273,13 @@ public:
                 fx_[i].setHover(c, i == cursor_, 400, 200);
                 fx_[i].setPressed(c, i == cursor_ && in.raw && (in.raw->mouse.buttons & 1u));
             }
+#if !defined(__PROSPERO__)
+            // Ordinateur : Échap deux fois de suite (moins de 0,6 s) quitte tout de suite.
+            if (in.back && !failMenu_ && c.now - pausedAt_ < 0.6) {
+                game.goTo(game.makeSongSelect(), false);
+                return;
+            }
+#endif
             if ((in.options || in.back) && !failMenu_) {
                 resume();
                 return;
@@ -296,6 +303,7 @@ public:
         if (in.options || in.back) {
             play_.setPaused(c, true);
             showMenu(false);
+            pausedAt_ = c.now;
             return;
         }
         if (in.extra && play_.canSkip()) play_.skip(c);
@@ -347,6 +355,8 @@ public:
     }
 
 private:
+    double pausedAt_ = -10;
+
     void showMenu(bool fail) {
         Context &c = game.ctx;
         failMenu_ = fail;
@@ -383,6 +393,11 @@ private:
         c.fonts->regular.drawShadow(b, kVW / 2 - 10 * U, iy, 18 * U, col::white, line, gfx::Align::Right);
         snprintf(line, sizeof(line), i18n::tr("Progression : %.0f%%"), play_.progress() * 100);
         c.fonts->regular.drawShadow(b, kVW / 2 + 10 * U, iy, 18 * U, col::white, line);
+#if !defined(__PROSPERO__)
+        if (!failMenu_)
+            c.fonts->regular.drawShadow(b, kVW / 2, iy + 34 * U, 15 * U, alpha(col::white, 0.6f), "Échap deux fois : quitter tout de suite",
+                                        gfx::Align::Center);
+#endif
         b.popTransform();
     }
 

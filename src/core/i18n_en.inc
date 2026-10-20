@@ -282,3 +282,4 @@
 {"Affiche à droite le nombre de frappes de chaque touche (K1, K2).", "Shows the press count of each key (K1, K2) on the right."},
 {"Tablette : écran = aire de jeu", "Tablet: screen = playfield"},
 {"Toute la surface de la tablette (ou de l'écran) correspond à l'aire de jeu, comme le pavé tactile en absolu. Pratique avec une tablette graphique sans réglage de zone.", "The whole tablet (or screen) surface maps to the playfield, like the touchpad in absolute mode. Handy with a graphics tablet without an area setting."},
+{"Échap deux fois : quitter tout de suite", "Press Esc twice to quit right away"},
