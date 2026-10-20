@@ -109,6 +109,7 @@ public:
     const gfx::Texture *thumbnail(int setIndex);
     // Dernières entrées (pour les écrans qui en ont besoin au rendu).
     const UiInput &input() const { return lastInput_; }
+    int frameLimit() const { return settings_.frameLimit; }
     // Saisie de texte : clavier virtuel du jeu sur PS5, saisie directe ailleurs.
     bool textInputSupported() const;
     bool startTextInput(const char *title, const std::string &initial);
@@ -190,6 +191,7 @@ private:
     float lastMouseX_ = -1, lastMouseY_ = -1;
     bool touchWasDown_ = false;
     bool mouseActive_ = false;
+    bool appliedFullscreen_ = true;
     bool padPointer_ = false;  // le pointeur suit le stick droit (menus)
     float pointerX_ = -1, pointerY_ = -1;
     float ptrTouchX_ = 0, ptrTouchY_ = 0;

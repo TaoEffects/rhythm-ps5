@@ -67,6 +67,7 @@ struct InitParams {
     int width = 1920;               // PS5 : 1920x1080, 2560x1440 ou 3840x2160
     int height = 1080;
     int refreshHz = 60;             // PS5 : 60 ou 120
+    bool fullscreen = true;         // ordinateur : plein écran (fenêtré sans bordure)
 };
 
 // Appele depuis le thread audio : remplir `frames` trames stereo float (L, R) a 48 kHz.
@@ -85,6 +86,11 @@ int refreshHz();                    // frequence effectivement obtenue (0 si inc
 
 void pollInput(InputState &out);
 void swapBuffers();
+// Synchronisation verticale (ordinateur ; sans effet sur PS5).
+void setVsync(bool on);
+// Plein écran (ordinateur ; Alt+Entrée bascule aussi). Sans effet sur PS5.
+void setFullscreen(bool on);
+bool fullscreen();
 
 double nowSeconds();                // horloge monotone
 void sleepSeconds(double seconds);

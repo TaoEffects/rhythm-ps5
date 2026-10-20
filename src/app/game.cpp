@@ -789,6 +789,18 @@ void Game::frame(const plat::InputState &raw, double now) {
         fpsFrames_ = 0;
     }
     if (raw.quitRequested) exit_ = true;
+    // Format de l'écran (fenêtre redimensionnée, plein écran...) : largeur virtuelle.
+    if (plat::width() > 0 && plat::height() > 0)
+        setVirtualAspect(static_cast<float>(plat::width()) / static_cast<float>(plat::height()));
+#if !defined(__PROSPERO__)
+    // Plein écran : l'option et Alt+Entrée restent d'accord.
+    if (settings_.fullscreen != appliedFullscreen_) {
+        plat::setFullscreen(settings_.fullscreen);
+        appliedFullscreen_ = settings_.fullscreen;
+    } else if (plat::fullscreen() != settings_.fullscreen) {
+        settings_.fullscreen = appliedFullscreen_ = plat::fullscreen();
+    }
+#endif
 
     // Piste du lancement finie (ou remplacée) : on enchaîne sur la map choisie.
     if (introTrackPlaying_ && music_.path() != introTrackPath_) introTrackPlaying_ = false;
@@ -890,6 +902,15 @@ void Game::frame(const plat::InputState &raw, double now) {
         fonts_.semibold.draw(batch_, x + 32, 97, 28, gfx::withAlpha(lz::col::white, a), lastToast.c_str());
     }
     if (screen_ && (!screen_->gameplay() || overlay_) && in.mouseActive) lz::cursor(ctx, in.mouseX, in.mouseY, (raw.mouse.buttons & 1u) != 0);
+    if (settings_.showFps && !settings_.showDebug) {
+        char fpsLine[32];
+        snprintf(fpsLine, sizeof(fpsLine), "%.0f fps", fps_);
+        const float fs = 18 * lz::U;
+        const float fw = fonts_.semibold.measure(fs, fpsLine) + 16 * lz::U;
+        batch_.roundRect(kVW - fw - 8 * lz::U, kVH - 34 * lz::U, fw, 26 * lz::U, 13 * lz::U, gfx::rgba(0, 0, 0, 140));
+        fonts_.semibold.drawMid(batch_, kVW - fw / 2 - 8 * lz::U, kVH - 21 * lz::U, fs, gfx::rgba(255, 255, 255),
+                                fpsLine, gfx::Align::Center);
+    }
     if (settings_.showDebug) {
         char line[160];
         const gfx::BatchStats &bs = batch_.lastFrame();

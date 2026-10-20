@@ -19,8 +19,14 @@ class Library;
 class Skin;
 }
 
-constexpr float kVW = 1920.0f;  // taille de l'écran virtuel
+// Écran virtuel : hauteur fixe de 1080 unités, largeur selon le format de l'écran
+// (1920 en 16:9, 1728 en 16:10, 1440 en 4:3, 2520 en 21:9) : rien n'est étiré.
 constexpr float kVH = 1080.0f;
+inline float kVW = 1920.0f;
+inline void setVirtualAspect(float aspect) {
+    const float w = kVH * aspect;
+    kVW = w < 1440.0f ? 1440.0f : (w > 2520.0f ? 2520.0f : w);
+}
 
 struct Fonts {
     gfx::Font light, regular, semibold, bold;

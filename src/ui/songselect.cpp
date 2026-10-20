@@ -28,7 +28,7 @@ using namespace lz;
 
 #define kSetH (72 * U)
 #define kDiffH (45 * U)
-constexpr float kColW = kVW / 2;                  // colonnes gauche et droite : 50 % chacune
+#define kColW (kVW / 2)                           // colonnes gauche et droite : 50 % chacune
 #define kFilterBottom (131 * U)  // bas de la zone de recherche
 #define kModH (42 * U)
 #define kModGap (7 * U)
