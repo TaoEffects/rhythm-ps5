@@ -111,12 +111,12 @@ public:
         if (in.extra) refresh();
         // Recherche : clavier virtuel de la console (Carré ou clic sur la barre).
         const float sy = game.toolbar.bottom(c) + 72 * U;
-        if (plat::textInputSupported() && !imeOpen_ && (in.extra2 || in.clicked(kMargin, sy + 18 * U, kVW - kMargin * 2, 40 * U))) {
-            imeOpen_ = plat::startTextInput("Rechercher des maps", query_);
+        if (game.textInputSupported() && !imeOpen_ && (in.extra2 || in.clicked(kMargin, sy + 18 * U, kVW - kMargin * 2, 40 * U))) {
+            imeOpen_ = game.startTextInput("Rechercher des maps", query_);
         }
         if (imeOpen_) {
             std::string text;
-            const int r = plat::pollTextInput(text);
+            const int r = game.pollTextInput(text);
             if (r != 0) {
                 imeOpen_ = false;
                 if (r > 0) {
@@ -262,9 +262,9 @@ public:
         b.roundRect(bx, sy + 18 * U, bw, 40 * U, 5 * U, alpha(pal.background6, 0.85f));
         icon(c, fa::magnifying_glass, bx + 22 * U, sy + 38 * U, 16 * U, pal.light2);
         const bool empty = query_.empty();
-        const std::string shown = empty ? (plat::textInputSupported() ? "rechercher (Carré)..." : "rechercher (clavier)...") : query_ + (plat::textInputSupported() ? "" : "_");
+        const std::string shown = empty ? (game.textInputSupported() ? "rechercher (Carré)..." : "rechercher (clavier)...") : query_ + (game.textInputSupported() ? "" : "_");
         c.fonts->regular.drawMid(b, bx + 44 * U, sy + 38 * U, 20 * U, empty ? pal.light4 : col::white, shown.c_str());
-        if (plat::textInputSupported()) padGlyph(c, Pad::Square, bx + bw - 22 * U, sy + 38 * U, 22 * U);
+        if (game.textInputSupported()) padGlyph(c, Pad::Square, bx + bw - 22 * U, sy + 38 * U, 22 * U);
         // Onglets de tri.
         c.fonts->semibold.drawMid(b, bx, tabsY() + 15 * U, 15 * U, pal.content2, "Tri");
         // L1 / R1 de part et d'autre des onglets : on voit tout de suite comment changer de tri.

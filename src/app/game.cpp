@@ -526,6 +526,28 @@ void Game::drawBackground() {
     b.rect(0, 0, kVW, kVH, gfx::rgba(0, 0, 0, static_cast<uint8_t>(std::clamp(bgDim_.at(t), 0.0f, 1.0f) * 255)));
 }
 
+namespace {
+// Clavier virtuel du jeu : toujours sur PS5 ; sur ordinateur avec RHYTHM_OSK=1 (tests).
+bool useOsk() {
+#if defined(__PROSPERO__)
+    return true;
+#else
+    const char *env = getenv("RHYTHM_OSK");
+    return env && *env == '1';
+#endif
+}
+}  // namespace
+
+bool Game::textInputSupported() const { return useOsk() || plat::textInputSupported(); }
+
+bool Game::startTextInput(const char *title, const std::string &initial) {
+    if (!useOsk()) return plat::startTextInput(title, initial);
+    osk_.open(ctx, i18n::tr(title), initial);
+    return true;
+}
+
+int Game::pollTextInput(std::string &out) { return useOsk() ? osk_.poll(out) : plat::pollTextInput(out); }
+
 void Game::toast(const std::string &text) {
     lastToast = text;
     toastTime = ctx.now;
@@ -825,7 +847,13 @@ void Game::frame(const plat::InputState &raw, double now) {
                    leaving_.end());
     if (overlayLeaving_ && nowMs >= overlayLeaveUntil_) overlayLeaving_.reset();
     logo.update(ctx, in);
-    if (overlay_) {
+    if (osk_.isOpen()) {
+        // Clavier virtuel ouvert : il prend les entrées ; l'écran ne fait que l'attendre.
+        osk_.update(ctx, in);
+        const UiInput idle{};
+        if (overlay_) overlay_->update(idle);
+        else if (screen_) screen_->update(idle);
+    } else if (overlay_) {
         overlay_->update(in);
     } else {
         if (screen_ && !screen_->gameplay()) handleToolbar(in);
@@ -849,6 +877,7 @@ void Game::frame(const plat::InputState &raw, double now) {
     if (overlayLeaving_) overlayLeaving_->render();
     if (overlay_) overlay_->render();
     toolbar.draw(ctx);
+    osk_.draw(ctx);
     // Notification temporaire.
     const float tk = static_cast<float>(now - toastTime);
     if (tk < 3.0f && !lastToast.empty()) {
