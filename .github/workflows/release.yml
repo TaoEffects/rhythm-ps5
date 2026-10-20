@@ -9,9 +9,12 @@ permissions:
   contents: write
 
 jobs:
+  # Le paquet PS5 dépend de dépôts externes qui ne sont plus publics : s'il ne
+  # peut pas être compilé ici, il est ajouté à la main à la release.
   ps5:
     if: contains(github.event.head_commit.message, '[release ')
     runs-on: ubuntu-24.04
+    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - name: Outils
@@ -55,7 +58,7 @@ jobs:
 
   release:
     needs: [ps5, macos, windows]
-    if: always() && needs.ps5.result == 'success'
+    if: always() && contains(github.event.head_commit.message, '[release ')
     runs-on: ubuntu-24.04
     steps:
       - name: Tag
