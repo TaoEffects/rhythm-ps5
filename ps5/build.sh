@@ -37,11 +37,31 @@ step() { printf '\n==> %s\n' "$*"; }
 
 mkdir -p "$deps" "$out"
 
+# Les dépôts d'origine (blackbearreloaded) ne sont plus publics : leurs copies sont
+# gardées sur la branche « ps5-deps » de ce dépôt, utilisée en secours.
+backup_fetched=0
+from_backup() {  # from_backup <fichier ou préfixe des morceaux> <destination>
+    if [[ $backup_fetched == 0 ]]; then
+        git -C "$root" fetch -q --depth 1 origin +ps5-deps:refs/remotes/origin/ps5-deps
+        backup_fetched=1
+    fi
+    local parts
+    parts=$(git -C "$root" ls-tree --name-only origin/ps5-deps | grep -E "^$1(\.part[0-9]+)?$" | sort)
+    [[ -n $parts ]] || { echo "copie de secours introuvable : $1" >&2; return 1; }
+    : > "$2"
+    for part in $parts; do git -C "$root" show "origin/ps5-deps:$part" >> "$2"; done
+}
+
 # --- 1. Boilerplate + SDK payload ---------------------------------------------------
 template="$deps/ps5-native-app-boilerplate"
 if [[ ! -d $template/.git ]]; then
     step "Téléchargement du boilerplate natif"
-    git clone -q "$boilerplate_repo" "$template"
+    if ! GIT_TERMINAL_PROMPT=0 git clone -q "$boilerplate_repo" "$template" 2>/dev/null; then
+        step "Boilerplate depuis la copie de secours (branche ps5-deps)"
+        rm -rf "$template"
+        from_backup boilerplate.tar.gz "$deps/boilerplate.tar.gz"
+        tar -xzf "$deps/boilerplate.tar.gz" -C "$deps"
+    fi
 fi
 if [[ $(git -C "$template" rev-parse HEAD) != "$boilerplate_commit" ]]; then
     git -C "$template" fetch -q origin "$boilerplate_commit" || git -C "$template" fetch -q origin
@@ -58,10 +78,17 @@ glue="$deps/ps5-opengl-$opengl_commit"
 if [[ ! -f $glue/.complete ]]; then
     step "Fichiers native-app de ps5-opengl ($opengl_commit)"
     mkdir -p "$glue/native-app" "$glue/tools"
+    ok=1
     for f in runtime_shims.c app_heap.c ps5-pie.ld app-symbols.map agc_link_stub.c agc_driver_link_stub.c; do
-        curl -fsSL -o "$glue/native-app/$f" "$opengl_raw/native-app/$f"
+        curl -fsSL -o "$glue/native-app/$f" "$opengl_raw/native-app/$f" 2>/dev/null || ok=0
     done
-    curl -fsSL -o "$glue/tools/native-display-metadata.py" "$opengl_raw/tools/native-display-metadata.py"
+    curl -fsSL -o "$glue/tools/native-display-metadata.py" "$opengl_raw/tools/native-display-metadata.py" 2>/dev/null || ok=0
+    if [[ $ok == 0 ]]; then
+        step "Fichiers ps5-opengl depuis la copie de secours"
+        rm -rf "$glue"
+        from_backup glue.tar.gz "$deps/glue.tar.gz"
+        tar -xzf "$deps/glue.tar.gz" -C "$deps"
+    fi
     touch "$glue/.complete"
 fi
 
@@ -70,7 +97,8 @@ sdk_dir="$deps/ps5-opengl-sdk-$sdk_version"
 if [[ ! -f $sdk_dir/.complete ]]; then
     step "SDK ps5-opengl $sdk_version"
     archive="$deps/ps5-opengl-sdk-$sdk_version.tar.gz"
-    [[ -f $archive ]] || curl -fL --retry 4 -o "$archive" "$sdk_url"
+    [[ -f $archive ]] || curl -fsL --retry 2 -o "$archive" "$sdk_url" ||
+        { step "SDK ps5-opengl depuis la copie de secours"; from_backup "ps5-opengl-sdk-$sdk_version.tar.gz" "$archive"; }
     echo "$sdk_sha256  $archive" | sha256sum --check --strict
     rm -rf "$sdk_dir"
     tar -xzf "$archive" -C "$deps"
