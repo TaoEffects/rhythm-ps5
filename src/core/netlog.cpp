@@ -1,6 +1,19 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "core/netlog.h"
 
+#if defined(_WIN32)
+// Windows : pas de journal réseau (le fichier de log suffit).
+namespace netlog {
+bool start(uint16_t) { return false; }
+void stop() {}
+bool clientConnected() { return false; }
+uint16_t port() { return 0; }
+const char *localAddress() { return "-"; }
+int clientFd() { return -1; }
+bool waitForClient(double) { return false; }
+}  // namespace netlog
+#else
+
 #include <arpa/inet.h>
 #include <netinet/in.h>
 #include <poll.h>
@@ -180,3 +193,4 @@ bool waitForClient(double timeoutSeconds) {
 }
 
 }  // namespace netlog
+#endif

@@ -1,5 +1,5 @@
-# Publie une release (paquet PS5 et, si la compilation passe, une version
-# macOS) quand un commit contenant « [release <tag>] » est poussé.
+# Publie une release (paquet PS5 et, si leur compilation passe, les versions
+# macOS et Windows) quand un commit contenant « [release <tag>] » est poussé.
 name: release
 
 on:
@@ -30,27 +30,31 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Dépendances
-        run: brew install sdl2 curl pkg-config ninja dylibbundler
-      - name: Build
-        run: |
-          export PKG_CONFIG_PATH="$(brew --prefix curl)/lib/pkgconfig:$PKG_CONFIG_PATH"
-          cmake -S . -B build/mac -G Ninja -DCMAKE_BUILD_TYPE=Release
-          ninja -k 0 -C build/mac rhythm-ps5
-      - name: Paquet
-        run: |
-          mkdir -p dist/rhythm-ps5-macos
-          cp build/mac/rhythm-ps5 dist/rhythm-ps5-macos/
-          cp -R ps5/assets dist/rhythm-ps5-macos/assets
-          cp LICENSE README.md dist/rhythm-ps5-macos/
-          dylibbundler -od -b -x dist/rhythm-ps5-macos/rhythm-ps5 -d dist/rhythm-ps5-macos/libs -p @executable_path/libs
-          cd dist && zip -qr rhythm-ps5-macos-arm64.zip rhythm-ps5-macos
+        run: brew install curl pkg-config ninja cmake dylibbundler
+      - name: Build (.app + .dmg)
+        run: bash packaging/macos/build.sh
       - uses: actions/upload-artifact@v4
         with:
           name: macos
-          path: dist/rhythm-ps5-macos-arm64.zip
+          path: build/macos/rhythm-ps5-macos-arm64.dmg
+
+  windows:
+    if: contains(github.event.head_commit.message, '[release ')
+    runs-on: ubuntu-24.04
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - name: Outils
+        run: sudo apt-get update && sudo apt-get install -y g++-mingw-w64-x86-64-posix zip unzip curl
+      - name: Build
+        run: bash packaging/windows/build.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: windows
+          path: build/windows/rhythm-ps5-windows.zip
 
   release:
-    needs: [ps5, macos]
+    needs: [ps5, macos, windows]
     if: always() && needs.ps5.result == 'success'
     runs-on: ubuntu-24.04
     steps:
@@ -75,4 +79,6 @@ jobs:
           name: rhythm-ps5 ${{ steps.tag.outputs.name }}
           prerelease: true
           body_path: .github/release-notes.md
-          files: artifacts/**/*.zip
+          files: |
+            artifacts/**/*.zip
+            artifacts/**/*.dmg

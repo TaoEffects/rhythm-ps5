@@ -2,6 +2,11 @@
 #include "net/mirror.h"
 
 #include <fcntl.h>
+#ifndef O_BINARY
+#define O_BINARY 0
+#endif
+
+#include <fcntl.h>
 #include <unistd.h>
 
 #include <cstdio>
@@ -237,7 +242,7 @@ void Mirror::doDownload(const std::shared_ptr<DownloadState> &d, const RemoteSet
         if (!set.title.empty()) d->label = set.artist + " - " + set.title;
     }
     const std::string tmp = songsDir_ + "/" + std::to_string(set.id) + ".osz.part";
-    const int fd = open(tmp.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    const int fd = open(tmp.c_str(), O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0644);
     if (fd < 0) {
         d->error = "impossible d'ecrire dans " + songsDir_;
         d->phase.store(4);

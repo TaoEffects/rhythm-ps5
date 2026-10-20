@@ -199,6 +199,9 @@ Response get(const std::string &url, size_t maxBytes, const Progress &progress, 
     }
     Ctx ctx{&r, maxBytes, &progress, cancel, &sink, 0};
     curl_easy_setopt(curl, CURLOPT_URL, url.c_str());
+#if defined(_WIN32)
+    curl_easy_setopt(curl, CURLOPT_SSL_OPTIONS, static_cast<long>(CURLSSLOPT_NATIVE_CA));  // certificats de Windows
+#endif
     curl_easy_setopt(curl, CURLOPT_FOLLOWLOCATION, 1L);
     curl_easy_setopt(curl, CURLOPT_USERAGENT, RHYTHM_APP_NAME "/" RHYTHM_VERSION);
     curl_easy_setopt(curl, CURLOPT_WRITEFUNCTION, onData);

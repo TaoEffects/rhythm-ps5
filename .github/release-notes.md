@@ -8,7 +8,13 @@ with a folder-app manager (ShadowMountPlus, etc.).
 - Built with the help of an AI (Claude), tested by hand on a real console.
 - Alpha version: expect bugs.
 
-The macOS package, when present, is experimental.
+**macOS (Apple Silicon):** open the `.dmg`, drag rhythm-ps5 to Applications, then right-click it > Open
+the first time (the app is not signed by Apple).
+
+**Windows (x64):** unzip `rhythm-ps5-windows.zip` and run `rhythm-ps5.exe` (Windows may show a
+SmartScreen warning: More info > Run anyway).
+
+The macOS and Windows versions are experimental.
 
 ---
 

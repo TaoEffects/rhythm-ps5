@@ -26,7 +26,9 @@ bool start(pthread_t &out, void *(*fn)(void *), void *arg, const char *name, siz
 
 void stackBounds(uintptr_t &low, uintptr_t &high) {
     low = high = 0;
-#if defined(__APPLE__)
+#if defined(_WIN32)
+    return;  // Windows : non mesuré (journal seulement)
+#elif defined(__APPLE__)
     // macOS : la pile se lit directement.
     high = reinterpret_cast<uintptr_t>(pthread_get_stackaddr_np(pthread_self()));
     low = high - pthread_get_stacksize_np(pthread_self());

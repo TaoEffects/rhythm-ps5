@@ -5,6 +5,16 @@
 #include <fcntl.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#if defined(_WIN32)
+#include <direct.h>
+#include <windows.h>
+#endif
+#if defined(_WIN32)
+#define fsync _commit
+#endif
+#ifndef O_BINARY
+#define O_BINARY 0  // Windows : pas de conversion des fins de ligne
+#endif
 
 #include <cerrno>
 #include <cstdio>
@@ -17,7 +27,7 @@ namespace fsu {
 
 bool readFile(const std::string &path, std::vector<uint8_t> &out, size_t maxBytes) {
     out.clear();
-    const int fd = open(path.c_str(), O_RDONLY);
+    const int fd = open(path.c_str(), O_RDONLY | O_BINARY);
     if (fd < 0) return false;
     struct stat st {};
     if (fstat(fd, &st) == 0 && st.st_size > 0) {
@@ -55,7 +65,7 @@ bool readText(const std::string &path, std::string &out, size_t maxBytes) {
 
 bool writeFileAtomic(const std::string &path, const void *data, size_t size) {
     const std::string tmp = path + ".tmp";
-    const int fd = open(tmp.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
+    const int fd = open(tmp.c_str(), O_WRONLY | O_CREAT | O_TRUNC | O_BINARY, 0644);
     if (fd < 0) return false;
     const auto *p = static_cast<const uint8_t *>(data);
     size_t left = size;
@@ -72,7 +82,12 @@ bool writeFileAtomic(const std::string &path, const void *data, size_t size) {
     }
     fsync(fd);
     close(fd);
+#if defined(_WIN32)
+    // Windows : rename() refuse d'écraser un fichier existant.
+    if (!MoveFileExA(tmp.c_str(), path.c_str(), MOVEFILE_REPLACE_EXISTING)) {
+#else
     if (rename(tmp.c_str(), path.c_str()) != 0) {
+#endif
         unlink(tmp.c_str());
         return false;
     }
@@ -93,7 +108,11 @@ bool makeDirs(const std::string &path) {
     if (path.empty() || isDir(path)) return true;
     const size_t slash = path.find_last_of('/');
     if (slash != std::string::npos && slash > 0 && !makeDirs(path.substr(0, slash))) return false;
+#if defined(_WIN32)
+    return _mkdir(path.c_str()) == 0 || errno == EEXIST;
+#else
     return mkdir(path.c_str(), 0755) == 0 || errno == EEXIST;
+#endif
 }
 
 bool removeFile(const std::string &path) { return unlink(path.c_str()) == 0; }
@@ -106,7 +125,11 @@ bool listDir(const std::string &path, std::vector<Entry> &out) {
             if (!strcmp(e->d_name, ".") || !strcmp(e->d_name, "..")) continue;
             Entry entry;
             entry.name = e->d_name;
+#if defined(_WIN32)
+            entry.isDir = isDir(join(path, entry.name));  // MinGW : pas de d_type
+#else
             entry.isDir = e->d_type == DT_DIR || (e->d_type == DT_UNKNOWN && isDir(join(path, entry.name)));
+#endif
             out.push_back(entry);
         }
         closedir(dir);
