@@ -205,10 +205,18 @@ public:
 
         const int pos = itemIndex(set_, diff_);
         const int n = static_cast<int>(items_.size());
-        if (in.down || in.wheel < 0) {
+        // Molette / pavé tactile : la liste défile librement (comme lazer), sans
+        // changer la sélection ; flèches, manette et clic y reviennent.
+        if (in.wheel != 0 && !items_.empty()) {
+            if (!freeScroll_) freeTarget_ = scroll_;
+            freeScroll_ = true;
+            const float maxY = items_.back().y + items_.back().h;
+            freeTarget_ = std::clamp(freeTarget_ - in.wheel * 140 * U, 0.0f, maxY);
+        }
+        if (in.down) {
             // Élément visible suivant ; une carte de set sélectionne sa difficulté.
             int k = pos;
-            const int steps = in.wheel < 0 ? static_cast<int>(std::ceil(-in.wheel)) : 1;
+            const int steps = 1;
             for (int s = 0; s < steps; ++s) {
                 k = (k + 1) % n;
                 if (items_[static_cast<size_t>(k)].diff < 0) {
@@ -218,7 +226,7 @@ public:
                 }
                 pick(items_[static_cast<size_t>(k)].set, items_[static_cast<size_t>(k)].diff);
             }
-        } else if (in.up || in.wheel > 0) {
+        } else if (in.up) {
             const int pv = visibleIndex();
             if (diff_ > 0) {
                 pick(set_, diff_ - 1);
@@ -377,12 +385,14 @@ private:
     }
     float targetScroll() const {
         if (items_.empty()) return 0;
+        if (freeScroll_) return freeTarget_;
         const Item &it = items_[static_cast<size_t>(itemIndex(set_, diff_))];
         return it.y + it.h / 2;
     }
     void pick(int s, int d) {
         set_ = s;
         diff_ = d;
+        freeScroll_ = false;  // la sélection reprend la main sur le défilement
     }
     PanelAnim &anim(const Item &it) { return anims_[static_cast<uint64_t>(it.set) << 16 | static_cast<uint16_t>(it.diff + 1)]; }
 
@@ -1081,6 +1091,8 @@ private:
     size_t lastCount_ = 0;
     int set_ = 0, diff_ = 0;
     float scroll_ = 0;
+    bool freeScroll_ = false;  // défilement libre (molette) en cours
+    float freeTarget_ = 0;
     double changeTime_ = 0, appearAt_ = 0, boardAt_ = 0;
     bool pending_ = false;
     std::string query_, boardKey_;

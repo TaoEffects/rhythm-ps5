@@ -268,3 +268,5 @@
 {"À jour", "Up to date"},
 {"Compteur de PP", "PP counter"},
 {"Performance (pp) estimée en direct pendant la partie, sous la précision.", "Live performance (pp) estimate during play, under the accuracy."},
+{"Effets", "Effects"},
+{"Général", "Master"},

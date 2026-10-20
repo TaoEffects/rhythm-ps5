@@ -179,6 +179,11 @@ private:
     double perfLast_ = 0, perfUpdate_ = 0, perfBuild_ = 0, perfSubmit_ = 0, perfSwap_ = 0, perfFrameMax_ = 0, perfSwapMax_ = 0;
     int perfFrames_ = 0;
     void handleToolbar(const UiInput &in);
+    void handleVolume(UiInput &in, const plat::InputState &raw);
+    void drawVolume();
+    double volumeUntil_ = 0;
+    int volumeSelected_ = 1;
+    bool volumeDirty_ = false;
     void handleDownloads();
     std::vector<const net::DownloadState *> handledDownloads_;
 

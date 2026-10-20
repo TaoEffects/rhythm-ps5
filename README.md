@@ -23,7 +23,8 @@ controller-first interface inspired by osu!lazer.
 - osu! skins (.osk) and two built-in styles (clean, triangles).
 - Controller (sticks, touchpad as a pointer in menus), USB keyboard and mouse; remappable keys.
 - English and French (follows the console language).
-- 60 / 120 Hz, local scores, automatic audio offset correction.
+- Star rating and pp computed locally (osu!lazer algorithms), live pp counter.
+- 60 / 120 Hz on PS5; V-Sync or frame limiter on desktop. Local scores, automatic audio offset correction.
 
 ## Installation (PS5)
 
@@ -40,7 +41,15 @@ Folders on the console:
 | Skins | `/data/rhythm-ps5/skins` (folders or `.osk`) |
 | Custom sounds | `/data/rhythm-ps5/sons` |
 
-A macOS build (Apple Silicon) is also attached to releases when it builds; it is experimental.
+## Installation (Windows / macOS)
+
+- **Windows (x64):** run `rhythm-ps5-setup.exe` from the [releases](../../releases). It installs
+  for your user (no admin rights), adds shortcuts, and later updates are offered in-game
+  (Options > Misc).
+- **macOS (Apple Silicon):** open the `.dmg`, drag rhythm-ps5 to Applications, then right-click >
+  Open the first time (the app is not signed by Apple).
+
+On desktop: fullscreen by default (Alt+Enter to toggle), Alt + mouse wheel for volume.
 
 ## Controls (controller)
 

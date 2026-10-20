@@ -541,6 +541,82 @@ bool useOsk() {
 }
 }  // namespace
 
+// --- Volume (façon osu!) ----------------------------------------------------------
+// Alt + molette (ou Alt + flèches) partout, molette seule pendant une partie : règle
+// le volume survolé par la souris (effets, général, musique), le général sinon.
+namespace {
+struct VolumeMeter {
+    float cx, cy, r;
+    const char *label;
+};
+void volumeMeters(VolumeMeter out[3]) {
+    const float U = lz::U, by = kVH - 110 * U;
+    out[0] = {kVW - 330 * U, by + 10 * U, 42 * U, "Effets"};
+    out[1] = {kVW - 210 * U, by, 62 * U, "Général"};
+    out[2] = {kVW - 90 * U, by + 10 * U, 42 * U, "Musique"};
+}
+}  // namespace
+
+void Game::handleVolume(UiInput &in, const plat::InputState &raw) {
+    const bool alt = raw.keyboard.keys[0xE2] || raw.keyboard.keys[0xE6];
+    const bool inGame = screen_ && screen_->gameplay() && !overlay_ && !osk_.isOpen();
+    float delta = 0;
+    if (in.wheel != 0 && (alt || inGame)) {
+        delta = in.wheel;
+        in.wheel = 0;
+    }
+    if (alt && (in.up || in.down)) {
+        delta = in.up ? 1.0f : -1.0f;
+        in.up = in.down = false;
+    }
+    const bool visible = ctx.now < volumeUntil_;
+    if (visible && in.mouseActive) {
+        VolumeMeter m[3];
+        volumeMeters(m);
+        for (int i = 0; i < 3; ++i) {
+            const float dx = in.mouseX - m[i].cx, dy = in.mouseY - m[i].cy;
+            if (dx * dx + dy * dy < (m[i].r + 12 * lz::U) * (m[i].r + 12 * lz::U)) volumeSelected_ = i;
+        }
+    }
+    if (delta != 0) {
+        if (!visible) volumeSelected_ = 1;
+        float &v = volumeSelected_ == 0 ? settings_.effectsVolume : volumeSelected_ == 2 ? settings_.musicVolume : settings_.masterVolume;
+        v = std::clamp(std::round((v + 0.05f * delta) * 100) / 100, 0.0f, 1.0f);
+        ctx.applyVolumes();
+        volumeUntil_ = ctx.now + 1.6;
+        volumeDirty_ = true;
+    }
+    if (volumeDirty_ && ctx.now >= volumeUntil_) {
+        volumeDirty_ = false;
+        ctx.saveSettings();
+    }
+}
+
+void Game::drawVolume() {
+    const float k = static_cast<float>(std::clamp((volumeUntil_ - ctx.now) / 0.25, 0.0, 1.0));
+    if (k <= 0.001f) return;
+    const float U = lz::U;
+    VolumeMeter m[3];
+    volumeMeters(m);
+    gfx::SpriteBatch &b = batch_;
+    b.pushAlpha(k);
+    b.roundRect(kVW - 395 * U, kVH - 200 * U, 380 * U, 180 * U, 16 * U, gfx::rgba(20, 20, 26, 220));
+    const float values[3] = {settings_.effectsVolume, settings_.masterVolume, settings_.musicVolume};
+    for (int i = 0; i < 3; ++i) {
+        const bool sel = i == volumeSelected_;
+        const uint32_t accent = sel ? lz::col::pink1 : lz::hex(0x66ccff);
+        const float th = m[i].r * 0.16f;
+        b.ring(m[i].cx, m[i].cy, m[i].r, th, gfx::rgba(255, 255, 255, 40));
+        if (values[i] > 0.001f) b.arc(m[i].cx, m[i].cy, m[i].r, th, 0, values[i], gfx::Corners{accent, accent, accent, accent});
+        char pct[16];
+        snprintf(pct, sizeof(pct), "%d", static_cast<int>(std::lround(values[i] * 100)));
+        fonts_.semibold.drawMid(b, m[i].cx, m[i].cy, m[i].r * 0.55f, gfx::rgba(255, 255, 255), pct, gfx::Align::Center);
+        fonts_.regular.drawMid(b, m[i].cx, m[i].cy + m[i].r + 16 * U, 14 * U, sel ? lz::col::pink1 : gfx::rgba(200, 200, 210),
+                               m[i].label, gfx::Align::Center);
+    }
+    b.popTransform();
+}
+
 bool Game::textInputSupported() const { return useOsk() || plat::textInputSupported(); }
 
 bool Game::startTextInput(const char *title, const std::string &initial) {
@@ -861,7 +937,8 @@ void Game::frame(const plat::InputState &raw, double now) {
         }
     }
 
-    const UiInput in = buildInput(raw);
+    UiInput in = buildInput(raw);
+    handleVolume(in, raw);
     lastInput_ = in;
 
     // Écrans qui finissent leur animation de sortie.
@@ -900,6 +977,7 @@ void Game::frame(const plat::InputState &raw, double now) {
     if (overlayLeaving_) overlayLeaving_->render();
     if (overlay_) overlay_->render();
     toolbar.draw(ctx);
+    drawVolume();
     osk_.draw(ctx);
     // Notification temporaire.
     const float tk = static_cast<float>(now - toastTime);
