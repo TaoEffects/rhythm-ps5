@@ -600,6 +600,7 @@ void Game::loadScores() {
         sc.rank = f[8];
         sc.mods = f[9];
         sc.date = atoll(f[10].c_str());
+        if (f.size() >= 12) sc.pp = atof(f[11].c_str());
         scores_.push_back(sc);
     }
     LOG("game: %zu scores locaux", scores_.size());
@@ -609,8 +610,8 @@ void Game::saveScores() const {
     std::string text;
     char buf[256];
     for (const LocalScore &s : scores_) {
-        snprintf(buf, sizeof(buf), "\t%lld\t%.6f\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%lld\n", s.score, s.accuracy, s.maxCombo, s.n300,
-                 s.n100, s.n50, s.nMiss, s.rank.c_str(), s.mods.c_str(), s.date);
+        snprintf(buf, sizeof(buf), "\t%lld\t%.6f\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%lld\t%.2f\n", s.score, s.accuracy, s.maxCombo,
+                 s.n300, s.n100, s.n50, s.nMiss, s.rank.c_str(), s.mods.c_str(), s.date, s.pp);
         text += s.key + buf;
     }
     fsu::writeFileAtomic(ctx.dataDir + "/scores.txt", text.data(), text.size());

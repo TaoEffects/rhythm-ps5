@@ -928,7 +928,10 @@ private:
             c.fonts->bold.drawMid(b, rx + 76 * U, y + rowH / 2, 15 * U, darken(rc, 2.5f), sc.rank.c_str(), gfx::Align::Center);
             snprintf(line, sizeof(line), "%lld", sc.score);
             c.fonts->light.drawMid(b, rx + 110 * U, y + 17 * U, 22 * U, col::white, line);
-            snprintf(line, sizeof(line), "%.2f%%   %dx   %s", sc.accuracy * 100, sc.maxCombo, sc.mods.c_str());
+            if (sc.pp > 0)
+                snprintf(line, sizeof(line), "%.0fpp   %.2f%%   %dx   %s", sc.pp, sc.accuracy * 100, sc.maxCombo, sc.mods.c_str());
+            else
+                snprintf(line, sizeof(line), "%.2f%%   %dx   %s", sc.accuracy * 100, sc.maxCombo, sc.mods.c_str());
             c.fonts->semibold.drawMid(b, rx + 112 * U, y + 36 * U, 13 * U, pal().content2, line);
             c.fonts->regular.drawMid(b, rx + rw - 20 * U, y + rowH / 2, 14 * U, pal().light4, relativeDate(sc.date).c_str(), gfx::Align::Right);
             b.popTransform();

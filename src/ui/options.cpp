@@ -463,6 +463,8 @@ private:
         toggle("Affichage", "Storyboards", "Animations des maps qui en ont (images, effets).", s.storyboard);
         toggle("Affichage", "Fond flou en jeu", "Floute l'image de fond pendant les parties.", s.blurInGame);
         toggle("Affichage", "Interface en jeu", "Score, précision, combo et barre de vie pendant la partie.", s.showHud);
+        toggle("Affichage", "Compteur de PP", "Performance (pp) estimée en direct pendant la partie, sous la précision.",
+               s.showPpCounter);
         toggle("Affichage", "Barre d'erreur de frappe", "Affiche en bas de l'écran si tes frappes sont en avance ou en retard.",
                s.showHitErrorBar);
         slider("Interface", "Taille de l'interface", "Agrandit ou réduit les menus (80 à 130 %).", s.uiScale, 0.8f, 1.3f, 0.05f,

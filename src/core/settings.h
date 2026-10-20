@@ -40,6 +40,7 @@ struct Settings {
     int frameLimit = 0;            // ordinateur : 0 V-Sync, sinon images/s max (-1 illimité)
     bool showFps = false;          // compteur d'images par seconde
     bool fullscreen = true;        // ordinateur : plein écran
+    bool showPpCounter = true;     // compteur de pp en jeu
     bool originalMetadata = false;
     float uiScale = 1.0f;           // taille de l'interface (0,8 à 1,3)
     int inputMode = 0;              // 0 manette + clavier/souris, 1 manette, 2 clavier/souris

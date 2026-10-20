@@ -9,6 +9,7 @@
 
 #include "app/context.h"
 #include "game/beatmap.h"
+#include "game/difficulty.h"
 #include "game/skin.h"
 
 namespace game {
@@ -28,6 +29,7 @@ struct PlayResult {
     int maxCombo = 0, n300 = 0, n100 = 0, n50 = 0, nMiss = 0;
     bool failed = false, completed = false;
     double unstableRate = 0, meanError = 0;
+    double pp = 0, stars = 0;  // performance (calcul façon lazer) et étoiles avec mods
     std::string rank;
     Mods mods;
 };
@@ -144,6 +146,10 @@ private:
     bool paused_ = false, finished_ = false, failed_ = false;
     double failTime_ = -1, endTime_ = -1;
     PlayResult result_;
+    std::vector<DifficultyAttributes> timed_;  // difficulté après chaque objet (pp en direct)
+    float displayPp_ = 0;
+    double livePp() const;
+    DifficultyMods difficultyMods() const;
 };
 
 }  // namespace game

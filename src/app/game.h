@@ -51,6 +51,7 @@ struct LocalScore {
     long long score = 0;
     double accuracy = 0;
     int maxCombo = 0, n300 = 0, n100 = 0, n50 = 0, nMiss = 0;
+    double pp = 0;
     std::string rank, mods;
     long long date = 0;
 };
