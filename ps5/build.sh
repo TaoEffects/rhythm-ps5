@@ -141,6 +141,8 @@ static_libraries=(
     "$payload_sdk/target/lib/libScePad.so"
     "$payload_sdk/target/lib/libSceUserService.so"
     "$payload_sdk/target/lib/libSceAudioOut.so"
+    "$payload_sdk/target/lib/libSceKeyboard.so"
+    "$payload_sdk/target/lib/libSceImeDialog.so"
     "$payload_sdk/target/lib/libSceSystemService.so"
     "$payload_sdk/target/lib/libSceNet.so"
     "$payload_sdk/target/lib/libSceSsl.so"

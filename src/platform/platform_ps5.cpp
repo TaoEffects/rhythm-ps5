@@ -22,6 +22,7 @@
 #include <string>
 #include <vector>
 
+#include "core/fsutil.h"
 #include "core/log.h"
 #include "core/thread.h"
 #include "platform/platform.h"
@@ -134,6 +135,16 @@ int scePadClose(int handle);
 int sceKernelLoadStartModule(const char *path, size_t argc, const void *argv, uint32_t flags, void *opt, int *res);
 int sceKernelDlsym(int handle, const char *symbol, void **address);
 const char *sceKernelGetFsSandboxRandomWord(void);
+// Imports directs (bibliothèques de liaison du SDK), en secours si dlsym échoue :
+// résolus au premier appel, une fois le module chargé.
+int sceKeyboardInit(void);
+int sceKeyboardOpen(int, int, int, void *);
+int sceKeyboardReadState(int, void *);
+int sceKeyboardClose(int);
+int sceImeDialogInit(const void *, void *);
+int sceImeDialogGetStatus(void);
+int sceImeDialogGetResult(void *);
+int sceImeDialogTerm(void);
 int sceAudioOutInit(void);
 int sceAudioOutOpen(int user, int type, int index, uint32_t len, uint32_t freq, uint32_t param);
 int sceAudioOutOutput(int handle, const void *data);
@@ -298,8 +309,16 @@ void initUsbInput() {
     }
     if (FILE *f = std::fopen(kInputMarker, "wb")) std::fclose(f);
     const int kb = loadSystemModule("libSceKeyboard.sprx");
-    if (resolve(kb, "sceKeyboardInit", g_kb.init) && resolve(kb, "sceKeyboardOpen", g_kb.open) &&
-        resolve(kb, "sceKeyboardReadState", g_kb.read) && resolve(kb, "sceKeyboardClose", g_kb.close)) {
+    if (!(resolve(kb, "sceKeyboardInit", g_kb.init) && resolve(kb, "sceKeyboardOpen", g_kb.open) &&
+          resolve(kb, "sceKeyboardReadState", g_kb.read) && resolve(kb, "sceKeyboardClose", g_kb.close)) &&
+        kb >= 0) {
+        LOG("ps5: clavier par imports directs");
+        g_kb.init = sceKeyboardInit;
+        g_kb.open = sceKeyboardOpen;
+        g_kb.read = reinterpret_cast<int (*)(int, SonyKeyboardData *)>(sceKeyboardReadState);
+        g_kb.close = sceKeyboardClose;
+    }
+    if (g_kb.init) {
         LOG("ps5: sceKeyboardInit = 0x%08x", static_cast<unsigned>(g_kb.init()));
         int junk = 0;
         g_keyboard = g_kb.open(g_user, 0, 0, &junk);
@@ -669,6 +688,7 @@ struct SceImeDialogResult {
 };
 }  // namespace
 namespace {
+constexpr const char *kImeMarker = "/download0/ime.pending";
 struct ImeApi {
     int (*init)(const SceImeDialogParam *, void *) = nullptr;
     int (*status)() = nullptr;
@@ -682,8 +702,17 @@ bool loadIme() {
         g_ime.tried = true;
         const int h = loadSystemModule("libSceImeDialog.sprx");
         if (!(resolve(h, "sceImeDialogInit", g_ime.init) && resolve(h, "sceImeDialogGetStatus", g_ime.status) &&
-              resolve(h, "sceImeDialogGetResult", g_ime.result) && resolve(h, "sceImeDialogTerm", g_ime.term)))
+              resolve(h, "sceImeDialogGetResult", g_ime.result) && resolve(h, "sceImeDialogTerm", g_ime.term))) {
             g_ime.init = nullptr;
+            // Garde-fou : si l'appel direct a planté la dernière fois, on n'essaie plus.
+            if (h >= 0 && !fsu::exists(kImeMarker)) {
+                LOG("ps5: clavier virtuel par imports directs");
+                g_ime.init = reinterpret_cast<int (*)(const SceImeDialogParam *, void *)>(sceImeDialogInit);
+                g_ime.status = sceImeDialogGetStatus;
+                g_ime.result = reinterpret_cast<int (*)(SceImeDialogResult *)>(sceImeDialogGetResult);
+                g_ime.term = sceImeDialogTerm;
+            }
+        }
     }
     return g_ime.init != nullptr;
 }
@@ -761,7 +790,9 @@ bool startTextInput(const char *title, const std::string &initial) {
     p.posy = 540;
     p.halign = 1;
     p.valign = 1;
+    if (FILE *f = std::fopen(kImeMarker, "wb")) std::fclose(f);
     const int r = g_ime.init(&p, nullptr);
+    std::remove(kImeMarker);
     LOG("ps5: clavier virtuel -> 0x%x", r);
     g_imeOpen = r == 0;
     return g_imeOpen;

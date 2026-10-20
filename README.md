@@ -1,82 +1,103 @@
 # rhythm-ps5
 
-Jeu de rythme compatible avec les beatmaps osu!standard, pour **PS5 jailbreakée**
-(homebrew). Interface inspirée d'osu!lazer, pensée pour la manette.
+A rhythm game for **jailbroken PS5** (homebrew) that plays osu!standard beatmaps, with a
+controller-first interface inspired by osu!lazer.
 
-> Projet **non officiel**, sans lien avec ppy ni osu!. Il n'utilise ni le nom ni le logo
-> osu! comme marque, n'inclut aucun asset officiel et **n'envoie jamais rien** aux
-> serveurs officiels : les scores restent sur la console.
+> **Unofficial project**, not affiliated with ppy or osu!. It does not use the osu! name or
+> logo as its brand, ships no official assets and **never sends anything** to the official
+> servers: scores stay on your console.
 >
-> Projet gratuit, développé **avec l'aide d'une IA** (Claude) et testé à la main sur
-> console.
+> Free project, built **with the help of an AI** (Claude) and tested by hand on a real console.
 
-**Version alpha** : des bugs sont à prévoir.
+**Alpha version**: expect bugs.
 
-## Fonctions
+## Features
 
-- Gameplay osu!standard : cercles, sliders, spinners, score, précision, vie.
-- Mods : Easy, No Fail, Half Time, Hard Rock, Double Time, Nightcore, Hidden, Auto.
-  DT / HT sans changer la hauteur du son.
-- Interface façon lazer : intro, menu, sélection de map, mods, pause, résultats, options.
-- Téléchargement de maps dans le jeu (miroir communautaire osu.direct), recherche au
-  clavier virtuel de la console, métadonnées d'origine (japonais...).
-- Skins osu! (.osk), deux styles intégrés (épuré, triangles).
-- Manette (stick, pavé tactile), clavier et souris USB ; touches réglables.
-- 60 / 120 Hz, scores locaux, correction automatique du décalage audio.
+- osu!standard gameplay: circles, sliders, spinners, score, accuracy, health.
+- Mods: Easy, No Fail, Half Time, Hard Rock, Double Time, Nightcore, Hidden, Auto.
+  DT / HT keep the original pitch.
+- lazer-style interface: intro, main menu, song select, mods, pause, results, options.
+- In-game beatmap downloads (community mirror osu.direct), search with the console's
+  on-screen keyboard, original-language metadata (Japanese...).
+- Storyboards.
+- osu! skins (.osk) and two built-in styles (clean, triangles).
+- Controller (sticks, touchpad as a pointer in menus), USB keyboard and mouse; remappable keys.
+- English and French (follows the console language).
+- 60 / 120 Hz, local scores, automatic audio offset correction.
 
 ## Installation (PS5)
 
-1. Télécharger `PPSA99731.zip` depuis les [releases](../../releases).
-2. Décompresser le dossier `PPSA99731` sur la console (par FTP, par exemple dans
-   `/data/homebrew/`) et l'enregistrer avec un gestionnaire d'applis en dossier
-   (ShadowMountPlus, etc.).
-3. Lancer l'appli. Au premier lancement, un assistant propose le tutoriel et des maps.
+1. Download `PPSA99731.zip` from the [releases](../../releases).
+2. Copy the `PPSA99731` folder to the console (over FTP, e.g. into `/data/homebrew/`) and
+   register it with a folder-app manager (ShadowMountPlus, etc.).
+3. Launch it. On first launch, a setup wizard offers the tutorial and starter beatmaps.
 
-Dossiers sur la console :
-
-| | |
-| --- | --- |
-| Maps | `/data/rhythm-ps5/songs` (dossiers ou `.osz`) |
-| Skins | `/data/rhythm-ps5/skins` (dossiers ou `.osk`) |
-| Sons personnels | `/data/rhythm-ps5/sons` |
-
-## Commandes (manette)
+Folders on the console:
 
 | | |
 | --- | --- |
-| Croix | valider |
-| Rond | retour |
-| Croix directionnelle / stick gauche | naviguer |
-| Stick droit | pointeur dans les menus (Croix pour cliquer) |
-| Carré | mods (sélection), recherche (téléchargement) |
-| Triangle | map au hasard |
-| L1 / R1 | changer de page ou de tri |
+| Beatmaps | `/data/rhythm-ps5/songs` (folders or `.osz`) |
+| Skins | `/data/rhythm-ps5/skins` (folders or `.osk`) |
+| Custom sounds | `/data/rhythm-ps5/sons` |
+
+A macOS build (Apple Silicon) is also attached to releases when it builds; it is experimental.
+
+## Controls (controller)
+
+| | |
+| --- | --- |
+| Cross | select |
+| Circle | back |
+| D-pad / left stick | navigate |
+| Right stick / touchpad | pointer in menus (Cross or touchpad press to click) |
+| Square | mods (song select), search (downloads) |
+| Triangle | random beatmap |
+| L1 / R1 | change page or sort |
 | Options | options |
 
-En jeu, les touches de frappe se règlent dans les options.
+In-game hit keys can be changed in the options.
 
-## Construire
+## Building
 
 ```
-bash ps5/build.sh                       # paquet PS5 -> build/ps5/dist/PPSA99731.zip
+bash ps5/build.sh                       # PS5 package -> build/ps5/dist/PPSA99731.zip
 cmake -S . -B build/pc -G Ninja && ninja -C build/pc && ./build/pc/rhythm-ps5   # PC (SDL2)
 ```
 
-## Licence
+## License
 
-GPL-3.0-or-later (voir `LICENSE`). S'appuie sur
+GPL-3.0-or-later (see `LICENSE`). Built on
 [ps5-opengl](https://github.com/blackbearreloaded/ps5-opengl),
 [ps5-native-app-boilerplate](https://github.com/blackbearreloaded/ps5-native-app-boilerplate),
-[ps5-payload-sdk](https://github.com/ps5-payload-dev/sdk) (GPL-3.0+) et
-[font8x8](https://github.com/dhepper/font8x8) (domaine public), les polices
-[Outfit](https://github.com/Outfitio/Outfit-Fonts), [Inter](https://rsms.me/inter/) et [Noto Sans JP](https://fonts.google.com/noto/specimen/Noto+Sans+JP) (OFL) et les
-icônes [Font Awesome Free](https://fontawesome.com) (police OFL, icônes CC BY 4.0). L'interface
-reproduit le comportement d'[osu!lazer](https://github.com/ppy/osu) (MIT) d'après son code, sans
-en reprendre d'asset. Les structures des
-API Sony viennent du [fork SDL de ps5-payload-dev](https://github.com/ps5-payload-dev/SDL).
+[ps5-payload-sdk](https://github.com/ps5-payload-dev/sdk) (GPL-3.0+) and
+[font8x8](https://github.com/dhepper/font8x8) (public domain); fonts
+[Outfit](https://github.com/Outfitio/Outfit-Fonts), [Inter](https://rsms.me/inter/) and
+[Noto Sans JP](https://fonts.google.com/noto/specimen/Noto+Sans+JP) (OFL); icons
+[Font Awesome Free](https://fontawesome.com) (font OFL, icons CC BY 4.0). The interface
+reproduces the behaviour of [osu!lazer](https://github.com/ppy/osu) (MIT) from its code, without
+using any of its assets. Sony API structures come from the
+[ps5-payload-dev SDL fork](https://github.com/ps5-payload-dev/SDL).
 
-Musique du lancement : « triangles » de cYsmix, tirée de
-[osu-resources](https://github.com/ppy/osu-resources) (© ppy Pty Ltd, licence
-[CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/)). Elle n'est **pas** incluse dans
-ce dépôt ni dans l'archive : le jeu la télécharge une fois depuis ce dépôt public au premier
-lancement, puis la garde dans `/data/rhythm-ps5/intro`.
+Startup music: "triangles" by cYsmix, from [osu-resources](https://github.com/ppy/osu-resources)
+(© ppy Pty Ltd, [CC BY-NC 4.0](https://creativecommons.org/licenses/by-nc/4.0/)). It is **not**
+included in this repository or in the package: the game downloads it once from that public
+repository on first launch and keeps it in `/data/rhythm-ps5/intro`.
+
+---
+
+## Français
+
+Jeu de rythme pour **PS5 jailbreakée** (homebrew) compatible avec les beatmaps osu!standard,
+avec une interface pensée pour la manette et inspirée d'osu!lazer.
+
+Projet **non officiel**, sans lien avec ppy ni osu! : ni nom ni logo osu! comme marque, aucun
+asset officiel, et rien n'est envoyé aux serveurs officiels (les scores restent sur la console).
+Projet gratuit, développé **avec l'aide d'une IA** (Claude) et testé à la main sur console.
+Version alpha.
+
+**Installation :** télécharger `PPSA99731.zip` dans les [releases](../../releases), copier le
+dossier `PPSA99731` sur la console et l'enregistrer avec un gestionnaire d'applis en dossier
+(ShadowMountPlus, etc.). Le jeu est en français si la console l'est, sinon en anglais.
+
+Maps : `/data/rhythm-ps5/songs` · Skins : `/data/rhythm-ps5/skins` · Sons :
+`/data/rhythm-ps5/sons`.
