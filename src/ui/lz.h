@@ -217,6 +217,15 @@ private:
 float text(Context &c, const gfx::Font &f, float x, float y, float size, uint32_t color, const std::string &s,
            gfx::Align a = gfx::Align::Left, float maxW = 0, bool shadow = false);
 
+// Mots pour le retour à la ligne : coupés aux espaces, et chaque caractère japonais
+// ou chinois (écrits sans espaces) forme un mot collé au précédent.
+struct WrapToken {
+    std::string text;
+    bool space = true;     // une espace le sépare du mot précédent
+    bool newline = false;  // saut de ligne forcé avant ce mot
+};
+std::vector<WrapToken> wrapTokens(const std::string &s);
+
 // Texte sur plusieurs lignes (coupé aux espaces) ; renvoie la hauteur occupée.
 float paragraph(Context &c, const gfx::Font &f, float x, float y, float width, float size, uint32_t color, const std::string &s,
                 gfx::Align a = gfx::Align::Left, float lineHeight = 1.4f);

@@ -252,7 +252,7 @@ void Play::judge(Context &ctx, size_t index, int result, double now, bool breaks
     }
     hp_ = std::clamp(hp_, 0.0f, 1.0f);
     const Vec2 p = o.type == kSlider ? o.endPosition() : o.pos;
-    if (result != 300) popups_.push_back(Popup{toScreenX(p.x), toScreenY(p.y), now, result});
+    if (result != 300 && !(ctx.settings->missesOnly && result != 0)) popups_.push_back(Popup{toScreenX(p.x), toScreenY(p.y), now, result});
 }
 
 void Play::handlePress(Context &ctx, double t) {
@@ -404,6 +404,9 @@ void Play::update(Context &ctx, const UiInput &in) {
         autoplay(ctx, t);
     } else {
         for (int p = 0; p < in.hitPresses; ++p) handlePress(ctx, t);
+        keyCount_[0] += in.key1Presses;
+        keyCount_[1] += in.key2Presses;
+        keysHeld_ = in.hitKeysHeld;
     }
 
     for (size_t i = firstActive_; i < map_.objects.size(); ++i) {
@@ -656,7 +659,7 @@ void Play::renderSkinnedObject(Context &ctx, size_t i, double t, float alpha, ui
     const float hx = toScreenX(o.pos.x), hy = toScreenY(o.pos.y);
     if (o.type == kSlider) {
         float bodyAlpha = alpha;
-        if (s.done) bodyAlpha *= 1 - anim::clamp01(static_cast<float>((now - s.doneAt) / 0.25));
+        if (s.done) bodyAlpha *= ctx.settings->instafade ? 0 : 1 - anim::clamp01(static_cast<float>((now - s.doneAt) / 0.25));
         if (mods_.hidden) bodyAlpha *= 1 - anim::clamp01(static_cast<float>((t - o.time) / std::max(1.0, o.endTime - o.time)));
         if (bodyAlpha > 0.01f) {
             renderSliderBody(ctx, o, bodyAlpha, color);
@@ -707,7 +710,7 @@ void Play::renderSkinnedObject(Context &ctx, size_t i, double t, float alpha, ui
         const int res = o.type == kCircle ? s.result : s.headResult;
         const double at = o.type == kCircle ? s.doneAt : s.headAt;
         const float e = static_cast<float>((now - at) / 0.24);
-        if (res > 0 && e >= 0 && e < 1) {
+        if (res > 0 && e >= 0 && e < 1 && !ctx.settings->instafade) {
             const float sc = k * (1 + 0.4f * anim::outQuint(e));
             skinSprite(ctx, circle, hx, hy, sc, gfx::withAlpha(color, 1 - e));
             skinSprite(ctx, overlay, hx, hy, sc, gfx::withAlpha(white, 1 - e));
@@ -828,7 +831,7 @@ void Play::render(Context &ctx) {
         const float hx = toScreenX(o.pos.x), hy = toScreenY(o.pos.y);
         if (o.type == kSlider) {
             float bodyAlpha = alpha;
-            if (s.done) bodyAlpha *= 1 - anim::clamp01(static_cast<float>((now - s.doneAt) / 0.25));
+            if (s.done) bodyAlpha *= ctx.settings->instafade ? 0 : 1 - anim::clamp01(static_cast<float>((now - s.doneAt) / 0.25));
             if (mods_.hidden) bodyAlpha *= 1 - anim::clamp01(static_cast<float>((t - o.time) / std::max(1.0, o.endTime - o.time)));
             if (bodyAlpha > 0.01f) {
                 renderSliderBody(ctx, o, bodyAlpha, color);
@@ -905,7 +908,9 @@ void Play::render(Context &ctx) {
             const int res = o.type == kCircle ? s.result : s.headResult;
             const double at = o.type == kCircle ? s.doneAt : s.headAt;
             const float k = static_cast<float>((now - at) / 0.24);
-            if (flat && res > 0 && k < 1 && k >= 0) {
+            if (ctx.settings->instafade && res > 0) {
+                // Instafade : plus rien à dessiner.
+            } else if (flat && res > 0 && k < 1 && k >= 0) {
                 // Épuré : le cercle grossit un peu et s'efface vite.
                 const float e = anim::outQuint(k);
                 b.ring(hx, hy, radius_ * (1 + 0.35f * e), radius_ * 0.09f, gfx::withAlpha(gfx::rgba(255, 255, 255), (1 - k) * 0.9f));
@@ -1068,6 +1073,27 @@ void Play::renderHud(Context &ctx, double t) {
             b.rect(cx + m.ms * k - 2, y - 10, 4, 28, gfx::withAlpha(gfx::rgba(255, 255, 255), a * 0.8f));
         }
         while (!errorMarks_.empty() && ctx.now - errorMarks_.front().time > 4.0) errorMarks_.pop_front();
+        if (ctx.settings->showUr && errors_.size() >= 2) {
+            // Taux d'instabilité : écart type des erreurs de frappe x 10, ramené à la vitesse normale.
+            double mean = 0, var = 0;
+            for (float e : errors_) mean += e;
+            mean /= static_cast<double>(errors_.size());
+            for (float e : errors_) var += (e - mean) * (e - mean);
+            snprintf(line, sizeof(line), "%.2f UR", std::sqrt(var / static_cast<double>(errors_.size())) * 10 / mods_.rate());
+            ctx.fonts->semibold.drawShadow(b, cx, y + 16, 22, gfx::rgba(255, 255, 255, 220), line, gfx::Align::Center);
+        }
+    }
+
+    // Compteur de touches (droite, milieu).
+    if (ctx.settings->keyOverlay) {
+        for (int k = 0; k < 2; ++k) {
+            const bool on = (keysHeld_ >> k) & 1u;
+            const float w = 72, h = 64, x = kVW - w - 16, y = kVH / 2 - h - 4 + static_cast<float>(k) * (h + 8);
+            b.roundRect(x, y, w, h, 10, on ? gfx::rgba(255, 102, 170, 220) : gfx::rgba(0, 0, 0, 140));
+            snprintf(line, sizeof(line), "%d", keyCount_[k]);
+            ctx.fonts->semibold.drawMid(b, x + w / 2, y + h / 2, keyCount_[k] >= 1000 ? 20 : 26, gfx::rgba(255, 255, 255),
+                                        keyCount_[k] ? line : (k ? "K2" : "K1"), gfx::Align::Center);
+        }
     }
 
     // Passer l'intro.

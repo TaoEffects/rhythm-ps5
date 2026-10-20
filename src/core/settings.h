@@ -9,7 +9,7 @@ struct Settings {
     int refreshHz = 120;           // 120 (si l'écran suit, sinon la console reste en 60) ou 60 forcé
     float backgroundDim = 0.75f;   // assombrissement du fond en jeu (0..1)
     bool showDebug = false;
-    int language = 0;              // 0 langue de la console, 1 français, 2 anglais
+    int language = 0;              // 0 langue de la console, 1 français, 2 anglais, 3 japonais
     bool showHitErrorBar = true;
     // Son
     float masterVolume = 0.8f;
@@ -41,6 +41,11 @@ struct Settings {
     bool showFps = false;          // compteur d'images par seconde
     bool fullscreen = true;        // ordinateur : plein écran
     bool showPpCounter = true;     // compteur de pp en jeu
+    bool instafade = false;        // cercles frappés effacés sur-le-champ (skins « pro »)
+    bool missesOnly = false;       // jugements : seulement les ratés
+    bool showUr = true;            // taux d'instabilité (UR) sur la barre d'erreur
+    bool keyOverlay = false;       // compteur de frappes K1 / K2
+    bool tabletPlayfield = false;  // ordinateur : l'écran entier (tablette) correspond à l'aire de jeu
     bool originalMetadata = false;
     float uiScale = 1.0f;           // taille de l'interface (0,8 à 1,3)
     int inputMode = 0;              // 0 manette + clavier/souris, 1 manette, 2 clavier/souris

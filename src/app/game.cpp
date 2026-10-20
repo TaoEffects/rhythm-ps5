@@ -846,10 +846,20 @@ UiInput Game::buildInput(const plat::InputState &raw) {
     const uint32_t hitMask = settings_.padHitMask ? settings_.padHitMask : Settings::defaultPadHitMask();
     const int k1 = std::clamp(settings_.keyHit1, 4, 231), k2 = std::clamp(settings_.keyHit2, 4, 231);
     const uint32_t mouseMask = settings_.mouseButtonsInGame ? 3u : 0u;
-    for (uint32_t b = p.buttons & ~pp.buttons & hitMask; b; b &= b - 1) ++in.hitPresses;
-    in.hitPresses += keyPressed(k1) + (k2 != k1 ? keyPressed(k2) : 0);
-    in.hitPresses += ((raw.mouse.buttons & 1u & mouseMask) && !(prev_.mouse.buttons & 1u)) +
-                     ((raw.mouse.buttons & 2u & mouseMask) && !(prev_.mouse.buttons & 2u));
+    // Touche 1 / touche 2 : la première et la deuxième touche, les clics gauche et droit,
+    // et les boutons de la manette en alternance.
+    int padIndex = 0;
+    for (uint32_t m = hitMask; m; m &= m - 1, ++padIndex) {
+        const uint32_t bit = m & (~m + 1);
+        const bool second = padIndex % 2 == 1;
+        if (p.buttons & ~pp.buttons & bit) ++(second ? in.key2Presses : in.key1Presses);
+        if (p.buttons & bit) in.hitKeysHeld |= second ? 2u : 1u;
+    }
+    in.key1Presses += keyPressed(k1) + ((raw.mouse.buttons & 1u & mouseMask) && !(prev_.mouse.buttons & 1u));
+    in.key2Presses += (k2 != k1 ? keyPressed(k2) : 0) + ((raw.mouse.buttons & 2u & mouseMask) && !(prev_.mouse.buttons & 2u));
+    in.hitPresses = in.key1Presses + in.key2Presses;
+    if (raw.keyboard.keys[k1] || (raw.mouse.buttons & 1u & mouseMask)) in.hitKeysHeld |= 1u;
+    if (raw.keyboard.keys[k2] || (raw.mouse.buttons & 2u & mouseMask)) in.hitKeysHeld |= 2u;
     in.hitHeld = (p.buttons & hitMask) || raw.keyboard.keys[k1] || raw.keyboard.keys[k2] || (raw.mouse.buttons & mouseMask);
     in.mouseClick = (raw.mouse.buttons & 1u) && !(prev_.mouse.buttons & 1u);
 
@@ -861,6 +871,14 @@ UiInput Game::buildInput(const plat::InputState &raw) {
             cursorY_ = raw.mouse.y * kVH / static_cast<float>(std::max(1, plat::height()));
             pointerX_ = cursorX_;
             pointerY_ = cursorY_;
+#if !defined(__PROSPERO__)
+            if (settings_.tabletPlayfield && screen_ && screen_->gameplay() && !overlay_) {
+                // Tablette : tout l'écran = l'aire de jeu agrandie de 10 %, comme le pavé tactile.
+                const float fw = 512 * kVH / 480 * 1.1f, fh = 384 * kVH / 480 * 1.1f;
+                cursorX_ = kVW / 2 - fw / 2 + cursorX_ / kVW * fw;
+                cursorY_ = kVH / 2 + 8 * kVH / 480 - fh / 2 + cursorY_ / kVH * fh;
+            }
+#endif
             in.mouseMoved = true;
             mouseActive_ = true;
             padPointer_ = false;

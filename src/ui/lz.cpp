@@ -609,6 +609,58 @@ float text(Context &c, const gfx::Font &f, float x, float y, float size, uint32_
     return shadow ? f.drawShadow(*c.batch, x, y, size, color, str.c_str(), a) : f.draw(*c.batch, x, y, size, color, str.c_str(), a);
 }
 
+std::vector<WrapToken> wrapTokens(const std::string &s) {
+    std::vector<WrapToken> out;
+    WrapToken cur;
+    bool pendingSpace = false, pendingNewline = false;
+    auto push = [&] {
+        if (cur.text.empty()) return;
+        out.push_back(cur);
+        cur = WrapToken{};
+    };
+    for (size_t i = 0; i < s.size();) {
+        const unsigned char c0 = static_cast<unsigned char>(s[i]);
+        if (c0 == ' ' || c0 == '\n') {
+            push();
+            pendingSpace = true;
+            if (c0 == '\n') pendingNewline = true;
+            ++i;
+            continue;
+        }
+        const size_t len = c0 < 0x80 ? 1 : c0 < 0xE0 ? 2 : c0 < 0xF0 ? 3 : 4;
+        const std::string ch = s.substr(i, len);
+        i += len;
+        // U+3000 à U+9FFF (kana, kanji, ponctuation) et formes pleine chasse U+FF00 à U+FFEF.
+        const bool cjk = len == 3 && ((c0 >= 0xE3 && c0 <= 0xE9) || c0 == 0xEF);
+        if (!cjk) {
+            if (cur.text.empty()) {
+                cur.space = pendingSpace && !out.empty();
+                cur.newline = pendingNewline;
+                pendingSpace = pendingNewline = false;
+            }
+            cur.text += ch;
+            continue;
+        }
+        // Ponctuation de fin (、。」）！？) : jamais en début de ligne, collée au mot d'avant.
+        static const char *const kNoBreakBefore[] = {"、", "。", "」", "』", "）", "！", "？", "ー", "っ", "ゃ", "ゅ", "ょ", "ッ", "ャ", "ュ", "ョ"};
+        bool glue = false;
+        for (const char *p : kNoBreakBefore) glue |= ch == p;
+        if (glue && (!cur.text.empty() || !out.empty()) && !pendingSpace) {
+            if (cur.text.empty()) out.back().text += ch;
+            else cur.text += ch;
+            continue;
+        }
+        push();
+        cur.space = pendingSpace && !out.empty();
+        cur.newline = pendingNewline;
+        pendingSpace = pendingNewline = false;
+        cur.text = ch;
+        push();
+    }
+    push();
+    return out;
+}
+
 float paragraph(Context &c, const gfx::Font &f, float x, float y, float width, float size, uint32_t color, const std::string &s,
                 gfx::Align a, float lineHeight) {
     std::string line, word;
@@ -618,26 +670,15 @@ float paragraph(Context &c, const gfx::Font &f, float x, float y, float width, f
         yy += size * lineHeight;
         line.clear();
     };
-    const std::string text = i18n::tr(s) + " ";
-    for (char ch : text) {
-        if (ch == '\n') {
-            if (!word.empty()) line = line.empty() ? word : line + " " + word;
-            word.clear();
-            flush();
-            continue;
-        }
-        if (ch != ' ') {
-            word += ch;
-            continue;
-        }
-        const std::string candidate = line.empty() ? word : line + " " + word;
+    for (const WrapToken &w : wrapTokens(i18n::tr(s))) {
+        if (w.newline) flush();
+        const std::string candidate = line.empty() ? w.text : line + (w.space ? " " : "") + w.text;
         if (!line.empty() && f.measure(size, candidate.c_str()) > width) {
             flush();
-            line = word;
+            line = w.text;
         } else {
             line = candidate;
         }
-        word.clear();
     }
     if (!line.empty()) flush();
     return yy - y;

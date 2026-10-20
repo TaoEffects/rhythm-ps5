@@ -138,6 +138,8 @@ private:
     float hp_ = 1.0f, displayHp_ = 1.0f;
     float difficultyMultiplier_ = 2;
     std::vector<float> errors_;
+    int keyCount_[2] = {0, 0};
+    unsigned keysHeld_ = 0;
     std::deque<Popup> popups_;
     std::deque<ErrorMark> errorMarks_;
     double lastT_ = 0;

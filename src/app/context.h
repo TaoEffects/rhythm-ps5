@@ -53,6 +53,8 @@ struct UiInput {
     bool touchpadClick = false;  // clic du pavé tactile (recherche)
     // Jeu
     int hitPresses = 0;     // frappes depuis l'image précédente
+    int key1Presses = 0, key2Presses = 0;  // dont touche 1 / touche 2 (compteur de touches)
+    unsigned hitKeysHeld = 0;              // bit 0 : touche 1, bit 1 : touche 2
     bool hitHeld = false;   // au moins une touche de frappe enfoncée
     float cursorX = kVW / 2, cursorY = kVH / 2;
     float stickAngle = 0;   // direction du stick gauche (spinners)

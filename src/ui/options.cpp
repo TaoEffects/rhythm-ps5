@@ -368,23 +368,17 @@ private:
     int wrap(const char *text, float x, float y, float width, float size, uint32_t color, bool draw = true) const {
         Context &c = game.ctx;
         int lines = 0;
-        std::string line, word;
-        const std::string s = std::string(i18n::tr(text)) + " ";
-        for (char ch : s) {
-            if (ch != ' ') {
-                word += ch;
-                continue;
-            }
-            const std::string candidate = line.empty() ? word : line + " " + word;
+        std::string line;
+        for (const lz::WrapToken &w : lz::wrapTokens(i18n::tr(text))) {
+            const std::string candidate = line.empty() ? w.text : line + (w.space ? " " : "") + w.text;
             if (c.fonts->regular.measure(size, candidate.c_str()) > width && !line.empty()) {
                 if (draw) c.fonts->regular.draw(*c.batch, x, y, size, color, line.c_str());
                 y += size * 1.35f;
                 ++lines;
-                line = word;
+                line = w.text;
             } else {
                 line = candidate;
             }
-            word.clear();
         }
         if (!line.empty()) {
             if (draw) c.fonts->regular.draw(*c.batch, x, y, size, color, line.c_str());
@@ -504,6 +498,12 @@ private:
                s.showPpCounter);
         toggle("Affichage", "Barre d'erreur de frappe", "Affiche en bas de l'écran si tes frappes sont en avance ou en retard.",
                s.showHitErrorBar);
+        toggle("Affichage", "Instafade", "Les cercles frappés disparaissent sur-le-champ, sans animation, comme les skins des joueurs "
+               "confirmés : l'écran reste lisible sur les flux rapides.", s.instafade);
+        toggle("Affichage", "Ratés seulement", "N'affiche plus les 100 et les 50 pendant la partie, seulement les ratés.", s.missesOnly);
+        toggle("Affichage", "Taux d'instabilité (UR)", "Régularité de tes frappes, sous la barre d'erreur : plus c'est bas, mieux "
+               "c'est.", s.showUr);
+        toggle("Affichage", "Compteur de touches", "Affiche à droite le nombre de frappes de chaque touche (K1, K2).", s.keyOverlay);
         slider("Interface", "Taille de l'interface", "Agrandit ou réduit les menus (80 à 130 %).", s.uiScale, 0.8f, 1.3f, 0.05f,
                [&s] { return pct(s.uiScale); });
         items_.push_back({"Interface", "Thème", "Le thème moderne s'inspire d'osu!lazer. Les thèmes « stable » et « classique » "
@@ -512,11 +512,13 @@ private:
                           [this](int) { game.toast("Les thèmes « stable » et « classique » arrivent bientôt"); }, nullptr, nullptr});
         items_.push_back({"Interface", "Langue", "Langue de l'interface.", Kind::Choice,
                           [&s] {
-                              return std::string(s.language == 1 ? "Français" : s.language == 2 ? "English"
-                                                                                                : "Automatique (langue de la console)");
+                              return std::string(s.language == 1   ? "Français"
+                                                 : s.language == 2 ? "English"
+                                                 : s.language == 3 ? "日本語"
+                                                                   : "Automatique (langue de la console)");
                           },
                           [&s](int dir) {
-                              s.language = (s.language + (dir < 0 ? 2 : 1)) % 3;
+                              s.language = (s.language + (dir < 0 ? 3 : 1)) % 4;
                               i18n::setLang(i18n::resolve(s.language, plat::systemLanguage()));
                           },
                           nullptr, nullptr});
@@ -562,6 +564,11 @@ private:
                           "déplace le curseur comme un trackpad.",
                           Kind::Choice, [&s] { return std::string(s.touchpadAbsolute ? "Absolu" : "Relatif"); },
                           [&s](int) { s.touchpadAbsolute = !s.touchpadAbsolute; }, nullptr, nullptr});
+#if !defined(__PROSPERO__)
+        toggle("Commandes", "Tablette : écran = aire de jeu",
+               "Toute la surface de la tablette (ou de l'écran) correspond à l'aire de jeu, comme le pavé tactile en "
+               "absolu. Pratique avec une tablette graphique sans réglage de zone.", s.tabletPlayfield);
+#endif
         slider("Commandes", "Vitesse du curseur (stick)",
                "Vitesse du curseur quand le stick gauche est poussé à fond. Le stick droit donne un mouvement fin.", s.cursorSpeed, 300,
                4000, 100, [&s] { return std::to_string(static_cast<int>(s.cursorSpeed)); });
