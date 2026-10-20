@@ -232,6 +232,9 @@ bool Game::init() {
             else introTrackState_.store(3);
         }
     }
+#if !defined(__PROSPERO__)
+    updater_.start();
+#endif
     goTo(makeIntro());
     return true;
 }
@@ -538,6 +541,82 @@ bool useOsk() {
 }
 }  // namespace
 
+// --- Volume (façon osu!) ----------------------------------------------------------
+// Alt + molette (ou Alt + flèches) partout, molette seule pendant une partie : règle
+// le volume survolé par la souris (effets, général, musique), le général sinon.
+namespace {
+struct VolumeMeter {
+    float cx, cy, r;
+    const char *label;
+};
+void volumeMeters(VolumeMeter out[3]) {
+    const float U = lz::U, by = kVH - 110 * U;
+    out[0] = {kVW - 330 * U, by + 10 * U, 42 * U, "Effets"};
+    out[1] = {kVW - 210 * U, by, 62 * U, "Général"};
+    out[2] = {kVW - 90 * U, by + 10 * U, 42 * U, "Musique"};
+}
+}  // namespace
+
+void Game::handleVolume(UiInput &in, const plat::InputState &raw) {
+    const bool alt = raw.keyboard.keys[0xE2] || raw.keyboard.keys[0xE6];
+    const bool inGame = screen_ && screen_->gameplay() && !overlay_ && !osk_.isOpen();
+    float delta = 0;
+    if (in.wheel != 0 && (alt || inGame)) {
+        delta = in.wheel;
+        in.wheel = 0;
+    }
+    if (alt && (in.up || in.down)) {
+        delta = in.up ? 1.0f : -1.0f;
+        in.up = in.down = false;
+    }
+    const bool visible = ctx.now < volumeUntil_;
+    if (visible && in.mouseActive) {
+        VolumeMeter m[3];
+        volumeMeters(m);
+        for (int i = 0; i < 3; ++i) {
+            const float dx = in.mouseX - m[i].cx, dy = in.mouseY - m[i].cy;
+            if (dx * dx + dy * dy < (m[i].r + 12 * lz::U) * (m[i].r + 12 * lz::U)) volumeSelected_ = i;
+        }
+    }
+    if (delta != 0) {
+        if (!visible) volumeSelected_ = 1;
+        float &v = volumeSelected_ == 0 ? settings_.effectsVolume : volumeSelected_ == 2 ? settings_.musicVolume : settings_.masterVolume;
+        v = std::clamp(std::round((v + 0.05f * delta) * 100) / 100, 0.0f, 1.0f);
+        ctx.applyVolumes();
+        volumeUntil_ = ctx.now + 1.6;
+        volumeDirty_ = true;
+    }
+    if (volumeDirty_ && ctx.now >= volumeUntil_) {
+        volumeDirty_ = false;
+        ctx.saveSettings();
+    }
+}
+
+void Game::drawVolume() {
+    const float k = static_cast<float>(std::clamp((volumeUntil_ - ctx.now) / 0.25, 0.0, 1.0));
+    if (k <= 0.001f) return;
+    const float U = lz::U;
+    VolumeMeter m[3];
+    volumeMeters(m);
+    gfx::SpriteBatch &b = batch_;
+    b.pushAlpha(k);
+    b.roundRect(kVW - 395 * U, kVH - 200 * U, 380 * U, 180 * U, 16 * U, gfx::rgba(20, 20, 26, 220));
+    const float values[3] = {settings_.effectsVolume, settings_.masterVolume, settings_.musicVolume};
+    for (int i = 0; i < 3; ++i) {
+        const bool sel = i == volumeSelected_;
+        const uint32_t accent = sel ? lz::col::pink1 : lz::hex(0x66ccff);
+        const float th = m[i].r * 0.16f;
+        b.ring(m[i].cx, m[i].cy, m[i].r, th, gfx::rgba(255, 255, 255, 40));
+        if (values[i] > 0.001f) b.arc(m[i].cx, m[i].cy, m[i].r, th, 0, values[i], gfx::Corners{accent, accent, accent, accent});
+        char pct[16];
+        snprintf(pct, sizeof(pct), "%d", static_cast<int>(std::lround(values[i] * 100)));
+        fonts_.semibold.drawMid(b, m[i].cx, m[i].cy, m[i].r * 0.55f, gfx::rgba(255, 255, 255), pct, gfx::Align::Center);
+        fonts_.regular.drawMid(b, m[i].cx, m[i].cy + m[i].r + 16 * U, 14 * U, sel ? lz::col::pink1 : gfx::rgba(200, 200, 210),
+                               m[i].label, gfx::Align::Center);
+    }
+    b.popTransform();
+}
+
 bool Game::textInputSupported() const { return useOsk() || plat::textInputSupported(); }
 
 bool Game::startTextInput(const char *title, const std::string &initial) {
@@ -597,6 +676,7 @@ void Game::loadScores() {
         sc.rank = f[8];
         sc.mods = f[9];
         sc.date = atoll(f[10].c_str());
+        if (f.size() >= 12) sc.pp = atof(f[11].c_str());
         scores_.push_back(sc);
     }
     LOG("game: %zu scores locaux", scores_.size());
@@ -606,8 +686,8 @@ void Game::saveScores() const {
     std::string text;
     char buf[256];
     for (const LocalScore &s : scores_) {
-        snprintf(buf, sizeof(buf), "\t%lld\t%.6f\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%lld\n", s.score, s.accuracy, s.maxCombo, s.n300,
-                 s.n100, s.n50, s.nMiss, s.rank.c_str(), s.mods.c_str(), s.date);
+        snprintf(buf, sizeof(buf), "\t%lld\t%.6f\t%d\t%d\t%d\t%d\t%d\t%s\t%s\t%lld\t%.2f\n", s.score, s.accuracy, s.maxCombo,
+                 s.n300, s.n100, s.n50, s.nMiss, s.rank.c_str(), s.mods.c_str(), s.date, s.pp);
         text += s.key + buf;
     }
     fsu::writeFileAtomic(ctx.dataDir + "/scores.txt", text.data(), text.size());
@@ -789,6 +869,25 @@ void Game::frame(const plat::InputState &raw, double now) {
         fpsFrames_ = 0;
     }
     if (raw.quitRequested) exit_ = true;
+#if !defined(__PROSPERO__)
+    if (updater_.available() && !updateAnnounced_ && screen_ && !screen_->gameplay()) {
+        updateAnnounced_ = true;
+        toast(i18n::tr("Mise à jour disponible : ") + updater_.latestTag() + i18n::tr(" (Options > Divers)"));
+    }
+    if (updater_.readyToQuit()) exit_ = true;  // l'installateur prend le relais
+#endif
+    // Format de l'écran (fenêtre redimensionnée, plein écran...) : largeur virtuelle.
+    if (plat::width() > 0 && plat::height() > 0)
+        setVirtualAspect(static_cast<float>(plat::width()) / static_cast<float>(plat::height()));
+#if !defined(__PROSPERO__)
+    // Plein écran : l'option et Alt+Entrée restent d'accord.
+    if (settings_.fullscreen != appliedFullscreen_) {
+        plat::setFullscreen(settings_.fullscreen);
+        appliedFullscreen_ = settings_.fullscreen;
+    } else if (plat::fullscreen() != settings_.fullscreen) {
+        settings_.fullscreen = appliedFullscreen_ = plat::fullscreen();
+    }
+#endif
 
     // Piste du lancement finie (ou remplacée) : on enchaîne sur la map choisie.
     if (introTrackPlaying_ && music_.path() != introTrackPath_) introTrackPlaying_ = false;
@@ -838,7 +937,8 @@ void Game::frame(const plat::InputState &raw, double now) {
         }
     }
 
-    const UiInput in = buildInput(raw);
+    UiInput in = buildInput(raw);
+    handleVolume(in, raw);
     lastInput_ = in;
 
     // Écrans qui finissent leur animation de sortie.
@@ -877,6 +977,7 @@ void Game::frame(const plat::InputState &raw, double now) {
     if (overlayLeaving_) overlayLeaving_->render();
     if (overlay_) overlay_->render();
     toolbar.draw(ctx);
+    drawVolume();
     osk_.draw(ctx);
     // Notification temporaire.
     const float tk = static_cast<float>(now - toastTime);
@@ -890,6 +991,15 @@ void Game::frame(const plat::InputState &raw, double now) {
         fonts_.semibold.draw(batch_, x + 32, 97, 28, gfx::withAlpha(lz::col::white, a), lastToast.c_str());
     }
     if (screen_ && (!screen_->gameplay() || overlay_) && in.mouseActive) lz::cursor(ctx, in.mouseX, in.mouseY, (raw.mouse.buttons & 1u) != 0);
+    if (settings_.showFps && !settings_.showDebug) {
+        char fpsLine[32];
+        snprintf(fpsLine, sizeof(fpsLine), "%.0f fps", fps_);
+        const float fs = 18 * lz::U;
+        const float fw = fonts_.semibold.measure(fs, fpsLine) + 16 * lz::U;
+        batch_.roundRect(kVW - fw - 8 * lz::U, kVH - 34 * lz::U, fw, 26 * lz::U, 13 * lz::U, gfx::rgba(0, 0, 0, 140));
+        fonts_.semibold.drawMid(batch_, kVW - fw / 2 - 8 * lz::U, kVH - 21 * lz::U, fs, gfx::rgba(255, 255, 255),
+                                fpsLine, gfx::Align::Center);
+    }
     if (settings_.showDebug) {
         char line[160];
         const gfx::BatchStats &bs = batch_.lastFrame();

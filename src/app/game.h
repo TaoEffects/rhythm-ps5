@@ -13,6 +13,9 @@
 #include <pthread.h>
 
 #include "app/context.h"
+#if !defined(__PROSPERO__)
+#include "app/update.h"
+#endif
 #include "game/library.h"
 #include "game/play.h"
 #include "game/skin.h"
@@ -48,6 +51,7 @@ struct LocalScore {
     long long score = 0;
     double accuracy = 0;
     int maxCombo = 0, n300 = 0, n100 = 0, n50 = 0, nMiss = 0;
+    double pp = 0;
     std::string rank, mods;
     long long date = 0;
 };
@@ -109,6 +113,10 @@ public:
     const gfx::Texture *thumbnail(int setIndex);
     // Dernières entrées (pour les écrans qui en ont besoin au rendu).
     const UiInput &input() const { return lastInput_; }
+    int frameLimit() const { return settings_.frameLimit; }
+#if !defined(__PROSPERO__)
+    upd::Updater &updater() { return updater_; }
+#endif
     // Saisie de texte : clavier virtuel du jeu sur PS5, saisie directe ailleurs.
     bool textInputSupported() const;
     bool startTextInput(const char *title, const std::string &initial);
@@ -171,6 +179,11 @@ private:
     double perfLast_ = 0, perfUpdate_ = 0, perfBuild_ = 0, perfSubmit_ = 0, perfSwap_ = 0, perfFrameMax_ = 0, perfSwapMax_ = 0;
     int perfFrames_ = 0;
     void handleToolbar(const UiInput &in);
+    void handleVolume(UiInput &in, const plat::InputState &raw);
+    void drawVolume();
+    double volumeUntil_ = 0;
+    int volumeSelected_ = 1;
+    bool volumeDirty_ = false;
     void handleDownloads();
     std::vector<const net::DownloadState *> handledDownloads_;
 
@@ -190,6 +203,7 @@ private:
     float lastMouseX_ = -1, lastMouseY_ = -1;
     bool touchWasDown_ = false;
     bool mouseActive_ = false;
+    bool appliedFullscreen_ = true;
     bool padPointer_ = false;  // le pointeur suit le stick droit (menus)
     float pointerX_ = -1, pointerY_ = -1;
     float ptrTouchX_ = 0, ptrTouchY_ = 0;
@@ -211,4 +225,8 @@ private:
     std::unordered_map<uint64_t, std::string> thumbTickets_;
     UiInput lastInput_;
     lz::OnScreenKeyboard osk_;
+#if !defined(__PROSPERO__)
+    upd::Updater updater_;
+    bool updateAnnounced_ = false;
+#endif
 };

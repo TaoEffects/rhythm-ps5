@@ -1,23 +1,21 @@
-First public (alpha) release of rhythm-ps5, a rhythm game for jailbroken PS5 that plays
-osu!standard beatmaps.
+rhythm-ps5, an unofficial rhythm game that plays osu!standard beatmaps — for jailbroken PS5,
+Windows and macOS. Alpha version: expect bugs.
 
-**Install:** unzip `PPSA99731.zip`, copy the `PPSA99731` folder to the console and register it
-with a folder-app manager (ShadowMountPlus, etc.).
+**PS5:** unzip `PPSA99731.zip`, copy the `PPSA99731` folder to the console and register it with a
+folder-app manager (ShadowMountPlus, etc.).
 
-- Unofficial project, not affiliated with ppy or osu!; nothing is sent to the official servers.
-- Built with the help of an AI (Claude), tested by hand on a real console.
-- Alpha version: expect bugs.
+**Windows (x64):** run `rhythm-ps5-setup.exe` (installs for your user, no admin rights; later
+updates are offered in-game). A portable `rhythm-ps5-windows.zip` is also provided. Windows may
+show a SmartScreen warning: More info > Run anyway.
 
-**macOS (Apple Silicon):** open the `.dmg`, drag rhythm-ps5 to Applications, then right-click it > Open
-the first time (the app is not signed by Apple).
+**macOS (Apple Silicon):** open the `.dmg`, drag rhythm-ps5 to Applications, then right-click it >
+Open the first time (the app is not signed by Apple).
 
-**Windows (x64):** unzip `rhythm-ps5-windows.zip` and run `rhythm-ps5.exe` (Windows may show a
-SmartScreen warning: More info > Run anyway).
-
-The macOS and Windows versions are experimental.
+Not affiliated with ppy or osu!; nothing is sent to the official servers. Built with the help of an
+AI (Claude), tested by hand.
 
 ---
 
-**FR :** première version publique (alpha). Décompresser `PPSA99731.zip` et enregistrer le
-dossier `PPSA99731` avec un gestionnaire d'applis en dossier. Projet non officiel, fait avec
-l'aide d'une IA.
+**FR :** jeu de rythme non officiel compatible avec les beatmaps osu!standard (PS5 jailbreakée,
+Windows, macOS). Windows : lancer `rhythm-ps5-setup.exe`. Mac : ouvrir le `.dmg` et glisser
+l'appli dans Applications. Fait avec l'aide d'une IA.

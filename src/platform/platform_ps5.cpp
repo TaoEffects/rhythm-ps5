@@ -608,6 +608,9 @@ void pollInput(InputState &out) {
 }
 
 void swapBuffers() { eglSwapBuffers(g_display, g_surface); }
+void setVsync(bool) {}
+void setFullscreen(bool) {}
+bool fullscreen() { return true; }
 
 double nowSeconds() {
     timespec ts{};

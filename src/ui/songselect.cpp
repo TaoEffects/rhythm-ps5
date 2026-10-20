@@ -28,7 +28,7 @@ using namespace lz;
 
 #define kSetH (72 * U)
 #define kDiffH (45 * U)
-constexpr float kColW = kVW / 2;                  // colonnes gauche et droite : 50 % chacune
+#define kColW (kVW / 2)                           // colonnes gauche et droite : 50 % chacune
 #define kFilterBottom (131 * U)  // bas de la zone de recherche
 #define kModH (42 * U)
 #define kModGap (7 * U)
@@ -205,10 +205,18 @@ public:
 
         const int pos = itemIndex(set_, diff_);
         const int n = static_cast<int>(items_.size());
-        if (in.down || in.wheel < 0) {
+        // Molette / pavé tactile : la liste défile librement (comme lazer), sans
+        // changer la sélection ; flèches, manette et clic y reviennent.
+        if (in.wheel != 0 && !items_.empty()) {
+            if (!freeScroll_) freeTarget_ = scroll_;
+            freeScroll_ = true;
+            const float maxY = items_.back().y + items_.back().h;
+            freeTarget_ = std::clamp(freeTarget_ - in.wheel * 140 * U, 0.0f, maxY);
+        }
+        if (in.down) {
             // Élément visible suivant ; une carte de set sélectionne sa difficulté.
             int k = pos;
-            const int steps = in.wheel < 0 ? static_cast<int>(std::ceil(-in.wheel)) : 1;
+            const int steps = 1;
             for (int s = 0; s < steps; ++s) {
                 k = (k + 1) % n;
                 if (items_[static_cast<size_t>(k)].diff < 0) {
@@ -218,7 +226,7 @@ public:
                 }
                 pick(items_[static_cast<size_t>(k)].set, items_[static_cast<size_t>(k)].diff);
             }
-        } else if (in.up || in.wheel > 0) {
+        } else if (in.up) {
             const int pv = visibleIndex();
             if (diff_ > 0) {
                 pick(set_, diff_ - 1);
@@ -377,12 +385,14 @@ private:
     }
     float targetScroll() const {
         if (items_.empty()) return 0;
+        if (freeScroll_) return freeTarget_;
         const Item &it = items_[static_cast<size_t>(itemIndex(set_, diff_))];
         return it.y + it.h / 2;
     }
     void pick(int s, int d) {
         set_ = s;
         diff_ = d;
+        freeScroll_ = false;  // la sélection reprend la main sur le défilement
     }
     PanelAnim &anim(const Item &it) { return anims_[static_cast<uint64_t>(it.set) << 16 | static_cast<uint16_t>(it.diff + 1)]; }
 
@@ -928,7 +938,10 @@ private:
             c.fonts->bold.drawMid(b, rx + 76 * U, y + rowH / 2, 15 * U, darken(rc, 2.5f), sc.rank.c_str(), gfx::Align::Center);
             snprintf(line, sizeof(line), "%lld", sc.score);
             c.fonts->light.drawMid(b, rx + 110 * U, y + 17 * U, 22 * U, col::white, line);
-            snprintf(line, sizeof(line), "%.2f%%   %dx   %s", sc.accuracy * 100, sc.maxCombo, sc.mods.c_str());
+            if (sc.pp > 0)
+                snprintf(line, sizeof(line), "%.0fpp   %.2f%%   %dx   %s", sc.pp, sc.accuracy * 100, sc.maxCombo, sc.mods.c_str());
+            else
+                snprintf(line, sizeof(line), "%.2f%%   %dx   %s", sc.accuracy * 100, sc.maxCombo, sc.mods.c_str());
             c.fonts->semibold.drawMid(b, rx + 112 * U, y + 36 * U, 13 * U, pal().content2, line);
             c.fonts->regular.drawMid(b, rx + rw - 20 * U, y + rowH / 2, 14 * U, pal().light4, relativeDate(sc.date).c_str(), gfx::Align::Right);
             b.popTransform();
@@ -1078,6 +1091,8 @@ private:
     size_t lastCount_ = 0;
     int set_ = 0, diff_ = 0;
     float scroll_ = 0;
+    bool freeScroll_ = false;  // défilement libre (molette) en cours
+    float freeTarget_ = 0;
     double changeTime_ = 0, appearAt_ = 0, boardAt_ = 0;
     bool pending_ = false;
     std::string query_, boardKey_;

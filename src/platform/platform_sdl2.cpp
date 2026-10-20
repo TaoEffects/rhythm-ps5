@@ -70,9 +70,13 @@ bool init(const InitParams &params) {
     // coordonnées virtuelles et s'adapte à la taille réelle.
     // RHYTHM_FULLSIZE=1 : taille réelle (captures d'écran de test).
     const char *full = getenv("RHYTHM_FULLSIZE");
-    const int div = full && *full == '1' ? 1 : 2;
-    g_window = SDL_CreateWindow(params.title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, params.width / div,
-                                params.height / div, SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE);
+    const bool testSize = full && *full == '1';
+    const int div = testSize ? 1 : 2;
+    Uint32 flags = SDL_WINDOW_OPENGL | SDL_WINDOW_RESIZABLE | SDL_WINDOW_ALLOW_HIGHDPI;
+    if (params.fullscreen && !testSize) flags |= SDL_WINDOW_FULLSCREEN_DESKTOP;
+    int ww = params.width / div, wh = params.height / div;
+    if (const char *size = getenv("RHYTHM_WINDOW")) sscanf(size, "%dx%d", &ww, &wh);  // tests : taille imposée
+    g_window = SDL_CreateWindow(params.title, SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, ww, wh, flags);
     if (!g_window) {
         LOG("sdl2: SDL_CreateWindow a echoue: %s", SDL_GetError());
         return false;
@@ -117,6 +121,11 @@ void pollInput(InputState &out) {
     SDL_Event e;
     while (SDL_PollEvent(&e)) {
         switch (e.type) {
+        case SDL_KEYDOWN:
+            // Alt+Entrée : plein écran / fenêtre.
+            if (e.key.keysym.scancode == SDL_SCANCODE_RETURN && (e.key.keysym.mod & KMOD_ALT) && !e.key.repeat)
+                setFullscreen(!fullscreen());
+            break;
         case SDL_QUIT:
             out.quitRequested = true;
             break;
@@ -210,6 +219,16 @@ void pollInput(InputState &out) {
 }
 
 void swapBuffers() { SDL_GL_SwapWindow(g_window); }
+void setFullscreen(bool on) {
+    if (g_window && fullscreen() != on) SDL_SetWindowFullscreen(g_window, on ? SDL_WINDOW_FULLSCREEN_DESKTOP : 0);
+}
+bool fullscreen() { return g_window && (SDL_GetWindowFlags(g_window) & SDL_WINDOW_FULLSCREEN_DESKTOP) != 0; }
+
+void setVsync(bool on) {
+    // V-Sync adaptatif si possible (-1), sinon classique.
+    if (!on) SDL_GL_SetSwapInterval(0);
+    else if (SDL_GL_SetSwapInterval(-1) != 0) SDL_GL_SetSwapInterval(1);
+}
 
 double nowSeconds() {
     static const Uint64 freq = SDL_GetPerformanceFrequency();
@@ -251,8 +270,19 @@ int audioBlockFrames() { return g_audioBlock; }
 // Données (réglages, maps, skins) : RHYTHM_DATA, sinon le dossier de l'utilisateur
 // (~/.local/share, ~/Library/Application Support, %APPDATA%).
 const char *systemLanguage() {
-    const char *env = getenv("LANG");
-    return env && *env ? env : "en";
+    // Langue préférée de l'utilisateur (Windows, macOS, Linux) ; LANG en secours.
+    static char lang[16] = "";
+    if (!lang[0]) {
+        if (SDL_Locale *locales = SDL_GetPreferredLocales()) {
+            if (locales[0].language) std::snprintf(lang, sizeof(lang), "%s", locales[0].language);
+            SDL_free(locales);
+        }
+        if (!lang[0]) {
+            const char *env = getenv("LANG");
+            std::snprintf(lang, sizeof(lang), "%s", env && *env ? env : "en");
+        }
+    }
+    return lang;
 }
 
 const char *writableDir() {

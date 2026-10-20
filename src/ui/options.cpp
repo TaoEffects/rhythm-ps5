@@ -402,6 +402,7 @@ private:
     void build() {
         Settings &s = *game.ctx.settings;
         items_.clear();
+#if defined(__PROSPERO__)
         items_.push_back({"Affichage", "Fréquence d'affichage",
                           "Auto : 120 Hz si l'écran le permet, sinon la console reste d'elle-même en 60 Hz. La PS5 ne "
                           "sort pas au-delà de 120 Hz. Un changement prend effet au prochain lancement.",
@@ -413,6 +414,27 @@ private:
                               return v;
                           },
                           [&s](int) { s.refreshHz = s.refreshHz == 60 ? 120 : 60; }, nullptr, nullptr});
+#else
+        items_.push_back({"Affichage", "Limite d'images",
+                          "V-Sync : calé sur l'écran, sans déchirure. Sans limite : latence minimale, mais le processeur "
+                          "et la carte graphique tournent à fond.",
+                          Kind::Choice,
+                          [&s] {
+                              if (s.frameLimit == 0) return std::string("V-Sync");
+                              if (s.frameLimit < 0) return std::string(i18n::tr("Illimitée"));
+                              return std::to_string(s.frameLimit) + i18n::tr(" images/s");
+                          },
+                          [&s](int dir) {
+                              static const int steps[] = {0, 240, 500, 1000, -1};
+                              int i = 0;
+                              while (i < 5 && steps[i] != s.frameLimit) ++i;
+                              i = ((i < 5 ? i : 0) + (dir < 0 ? 4 : 1)) % 5;
+                              s.frameLimit = steps[i];
+                          },
+                          nullptr, nullptr});
+        toggle("Affichage", "Plein écran", "Plein écran ou fenêtre (Alt+Entrée bascule aussi).", s.fullscreen);
+        toggle("Affichage", "Afficher les FPS", "Compteur d'images par seconde dans un coin de l'écran.", s.showFps);
+#endif
         items_.push_back({"Affichage", "Style de jeu",
                           "Épuré : cercles sombres à fin liseré blanc (façon WhiteCat). Triangles : le style coloré de "
                           "lazer. Ensuite, tes skins osu! : dépose des .osk dans /data/rhythm-ps5/skins (FTP).",
@@ -441,6 +463,8 @@ private:
         toggle("Affichage", "Storyboards", "Animations des maps qui en ont (images, effets).", s.storyboard);
         toggle("Affichage", "Fond flou en jeu", "Floute l'image de fond pendant les parties.", s.blurInGame);
         toggle("Affichage", "Interface en jeu", "Score, précision, combo et barre de vie pendant la partie.", s.showHud);
+        toggle("Affichage", "Compteur de PP", "Performance (pp) estimée en direct pendant la partie, sous la précision.",
+               s.showPpCounter);
         toggle("Affichage", "Barre d'erreur de frappe", "Affiche en bas de l'écran si tes frappes sont en avance ou en retard.",
                s.showHitErrorBar);
         slider("Interface", "Taille de l'interface", "Agrandit ou réduit les menus (80 à 130 %).", s.uiScale, 0.8f, 1.3f, 0.05f,
@@ -513,6 +537,20 @@ private:
         slider("Commandes", "Taille du curseur", "Taille du curseur en jeu.", s.cursorSize, 0.5f, 2.0f, 0.1f,
                [&s] { return pct(s.cursorSize); });
         toggle("Commandes", "Traînée du curseur", "La traînée qui suit le curseur en jeu.", s.cursorTrail);
+#if !defined(__PROSPERO__)
+        items_.push_back({"Divers", "Mise à jour", "Vérifie au lancement s'il existe une version plus récente du jeu.",
+                          Kind::Choice,
+                          [this] {
+                              upd::Updater &u = game.updater();
+                              if (u.downloading())
+                                  return std::string(i18n::tr("Téléchargement... ")) +
+                                         std::to_string(static_cast<int>(u.progress() * 100)) + " %";
+                              if (u.available()) return std::string(i18n::tr("Installer ")) + u.latestTag();
+                              if (u.failed()) return std::string(i18n::tr("Vérification impossible"));
+                              return std::string(i18n::tr("À jour"));
+                          },
+                          [this](int) { game.updater().install(); }, nullptr, nullptr});
+#endif
         items_.push_back({"Divers", "Configuration initiale", "Relance l'assistant du premier lancement (maps de base, façon de jouer...).",
                           Kind::Choice, [] { return std::string("Ouvrir"); },
                           [this](int) {

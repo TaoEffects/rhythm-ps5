@@ -159,6 +159,8 @@ bool Play::start(Context &ctx, Beatmap map, const Mods &mods, const gfx::Texture
     lastT_ = startTime_;
     lastWall_ = ctx.now;
     result_ = PlayResult{};
+    timed_ = computeTimedDifficulty(map_, difficultyMods());
+    displayPp_ = 0;
     LOG("play: %s - %s [%s] AR%.1f OD%.1f CS%.1f HP%.1f mods='%s' depart=%.0fms", map_.artist.c_str(),
         map_.title.c_str(), map_.version.c_str(), ar_, od_, cs_, hpSetting_, mods_.label().c_str(), startTime_);
     return true;
@@ -492,6 +494,29 @@ void Play::autoplay(Context &ctx, double t) {
     (void)ctx;
 }
 
+DifficultyMods Play::difficultyMods() const {
+    DifficultyMods dm;
+    dm.rate = mods_.rate();
+    dm.hardRock = mods_.hardRock;
+    dm.easy = mods_.easy;
+    dm.hidden = mods_.hidden;
+    return dm;
+}
+
+// PP de la partie en cours : difficulté de la map jusqu'au dernier objet joué.
+double Play::livePp() const {
+    const int judged = n300_ + n100_ + n50_ + nMiss_;
+    if (judged <= 0 || timed_.empty()) return 0;
+    const DifficultyAttributes &a = timed_[static_cast<size_t>(std::min<int>(judged, static_cast<int>(timed_.size())) - 1)];
+    ScoreStats s;
+    s.n300 = n300_;
+    s.n100 = n100_;
+    s.n50 = n50_;
+    s.nMiss = nMiss_;
+    s.maxCombo = maxCombo_;
+    return computePp(a, s, difficultyMods(), mods_.noFail);
+}
+
 void Play::finishResult() {
     PlayResult &r = result_;
     r.score = score_;
@@ -503,6 +528,8 @@ void Play::finishResult() {
     r.failed = failed_;
     r.completed = !failed_;
     r.mods = mods_;
+    r.pp = livePp();
+    r.stars = timed_.empty() ? 0 : timed_.back().stars;
     const int total = n300_ + n100_ + n50_ + nMiss_;
     r.accuracy = total > 0 ? (300.0 * n300_ + 100.0 * n100_ + 50.0 * n50_) / (300.0 * total) : 1.0;
     double mean = 0;
@@ -997,8 +1024,17 @@ void Play::renderHud(Context &ctx, double t) {
     const double acc = total > 0 ? (300.0 * n300_ + 100.0 * n100_ + 50.0 * n50_) / (300.0 * total) * 100.0 : 100.0;
     snprintf(line, sizeof(line), "%.2f%%", acc);
     ctx.fonts->semibold.drawShadow(b, kVW - 30, 92, 36, gfx::rgba(255, 255, 255), line, gfx::Align::Right);
-    if (!mods_.label().empty())
-        ctx.fonts->semibold.drawShadow(b, kVW - 30, 136, 26, gfx::rgba(255, 210, 120), mods_.label().c_str(), gfx::Align::Right);
+    float hy = 136;
+    if (!mods_.label().empty()) {
+        ctx.fonts->semibold.drawShadow(b, kVW - 30, hy, 26, gfx::rgba(255, 210, 120), mods_.label().c_str(), gfx::Align::Right);
+        hy += 34;
+    }
+    // Compteur de PP (option) : sous la précision.
+    if (ctx.settings->showPpCounter) {
+        displayPp_ = anim::approach(displayPp_, static_cast<float>(livePp()), dt, 0.15f);
+        snprintf(line, sizeof(line), "%.0fpp", displayPp_);
+        ctx.fonts->semibold.drawShadow(b, kVW - 30, hy, 30, gfx::rgba(255, 255, 255), line, gfx::Align::Right);
+    }
 
     // Combo (bas gauche) avec un petit rebond.
     if (combo_ > 0) {

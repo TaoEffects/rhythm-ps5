@@ -5,13 +5,13 @@
 #include <cmath>
 #include <cstdlib>
 
+#include "app/context.h"
 #include "core/fsutil.h"
 #include "core/log.h"
 
 namespace game {
 namespace {
 
-constexpr float kVW = 1920, kVH = 1080;
 
 // Courbes d'osu! (numéros 0 à 34).
 float easeOsu(int e, float t) {

@@ -320,6 +320,7 @@ public:
                 s.nMiss = r.nMiss;
                 s.rank = r.rank;
                 s.mods = r.mods.label();
+                s.pp = r.pp;
                 s.date = static_cast<long long>(time(nullptr));
                 game.addScore(s);
             }
@@ -530,12 +531,16 @@ public:
             std::string value;
             uint32_t color;
         };
-        char acc[32], combo[32], ur[32];
+        char acc[32], combo[32], ur[32], pp[32];
         const float sa = t < 450 ? 0 : anim::ease(Ease::Out, static_cast<float>((t - 450) / 1500.0));
         snprintf(acc, sizeof(acc), "%.2f%%", r_.accuracy * 100 * sa);
         snprintf(combo, sizeof(combo), "%dx", static_cast<int>(r_.maxCombo * sp));
         snprintf(ur, sizeof(ur), "%.1f", r_.unstableRate);
-        const Stat row1[3] = {{"PRÉCISION", acc, col::white}, {"COMBO MAX", combo, col::white}, {"INSTABILITÉ", ur, col::white}};
+        snprintf(pp, sizeof(pp), "%.0f", r_.pp * sa);
+        const Stat row1[4] = {{"PRÉCISION", acc, col::white},
+                              {"COMBO MAX", combo, col::white},
+                              {"PP", pp, col::white},
+                              {"INSTABILITÉ", ur, col::white}};
         const Stat row2[4] = {{"GREAT", std::to_string(static_cast<int>(r_.n300 * sp)), col::blue},
                               {"OK", std::to_string(static_cast<int>(r_.n100 * sp)), col::greenLight},
                               {"MEH", std::to_string(static_cast<int>(r_.n50 * sp)), col::yellow},
@@ -555,8 +560,8 @@ public:
                 b.popTransform();
             }
         };
-        drawRow(row1, 3, y, 0);
-        drawRow(row2, 4, y + 46 * U, 3);
+        drawRow(row1, 4, y, 0);
+        drawRow(row2, 4, y + 46 * U, 4);
         // Barre du bas et boutons.
         b.rect(0, kVH - 50 * U, kVW, 50 * U, hex(0x333333));
         drawBarButton(retryFx_, kVW / 2 - 150 * U, "Rejouer", fa::rotate_right, col::purple1, Pad::Square);
