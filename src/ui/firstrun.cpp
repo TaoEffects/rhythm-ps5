@@ -222,6 +222,13 @@ private:
                 c.play(c.sfx->uiHover, 0.6f);
                 return;
             }
+#if defined(__PROSPERO__)
+            // Clavier et souris USB pas encore pris en charge sur PS5.
+            if (focus_ == 1) {
+                game.toast("Clavier et souris : bientôt sur PS5");
+                return;
+            }
+#endif
             // 0 manette, 1 clavier/souris, 2 les deux (ordre d'affichage).
             s.inputMode = focus_ == 0 ? 1 : focus_ == 1 ? 2 : 0;
             s.mouseButtonsInGame = s.inputMode != 1;
@@ -330,6 +337,9 @@ private:
                 card(cx, y, cw, ch, i, sel);
                 icon(c, glyphs[i], cx + cw / 2, y + 62 * U, 46 * U, sel ? col::white : pal().light2);
                 c.fonts->semibold.drawMid(b, cx + cw / 2, y + 126 * U, 18 * U, col::white, names[i], gfx::Align::Center);
+#if defined(__PROSPERO__)
+                if (i == 1) c.fonts->regular.drawMid(b, cx + cw / 2, y + 150 * U, 14 * U, pal().light4, "bientôt sur PS5", gfx::Align::Center);
+#endif
             }
             y += ch + 26 * U;
             const char *help = s.inputMode == 1
@@ -340,7 +350,12 @@ private:
                                      "Les touches se changent dans les options."
                                    : "Tout fonctionne en même temps : manette, clavier et souris. Les touches se changent dans "
                                      "les options.";
-            paragraph(c, c.fonts->regular, x, y, w, 17 * U, pal().content2, help);
+            y += paragraph(c, c.fonts->regular, x, y, w, 17 * U, pal().content2, help);
+#if defined(__PROSPERO__)
+            paragraph(c, c.fonts->regular, x, y + 10 * U, w, 15 * U, pal().light4,
+                      "Le clavier et la souris USB ne sont pas encore pris en charge sur PS5 : ils arriveront dans une "
+                      "prochaine version.");
+#endif
             break;
         }
         case Interface: {

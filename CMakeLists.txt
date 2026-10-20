@@ -10,7 +10,15 @@ if(NOT CMAKE_BUILD_TYPE)
 endif()
 
 find_package(PkgConfig REQUIRED)
-pkg_check_modules(SDL2 REQUIRED IMPORTED_TARGET sdl2)
+# RHYTHM_SDL2_STATIC : SDL2 compilée en statique (paquet macOS autonome).
+option(RHYTHM_SDL2_STATIC "Lier SDL2 en statique (find_package)" OFF)
+if(RHYTHM_SDL2_STATIC)
+  find_package(SDL2 CONFIG REQUIRED)
+  set(RHYTHM_SDL2_TARGET SDL2::SDL2-static)
+else()
+  pkg_check_modules(SDL2 REQUIRED IMPORTED_TARGET sdl2)
+  set(RHYTHM_SDL2_TARGET PkgConfig::SDL2)
+endif()
 find_package(OpenGL REQUIRED)
 find_package(Threads REQUIRED)
 
@@ -24,5 +32,5 @@ target_include_directories(rhythm-ps5 PRIVATE src third_party third_party/font8x
 pkg_check_modules(CURL REQUIRED IMPORTED_TARGET libcurl)
 target_compile_options(rhythm-ps5 PRIVATE -Wall -Wextra -fno-omit-frame-pointer)
 target_compile_definitions(rhythm-ps5 PRIVATE RHYTHM_ASSETS_DIR="${CMAKE_SOURCE_DIR}/ps5/assets")
-target_link_libraries(rhythm-ps5 PRIVATE PkgConfig::SDL2 PkgConfig::CURL OpenGL::GL Threads::Threads)
+target_link_libraries(rhythm-ps5 PRIVATE ${RHYTHM_SDL2_TARGET} PkgConfig::CURL OpenGL::GL Threads::Threads)
 

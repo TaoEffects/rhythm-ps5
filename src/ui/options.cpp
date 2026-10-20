@@ -473,7 +473,12 @@ private:
                           Kind::Choice, [&s] { return (s.offsetMs > 0 ? "+" : "") + std::to_string(s.offsetMs) + " ms"; },
                           [&s](int d) { s.offsetMs = std::clamp(s.offsetMs + 5 * d, -300, 300); }, nullptr, nullptr});
         items_.push_back({"Commandes", "Façon de jouer",
-                          "Manette seule, clavier et souris, ou les deux en même temps.", Kind::Choice,
+#if defined(__PROSPERO__)
+                          "Manette seule, clavier et souris, ou les deux en même temps. Clavier et souris USB : bientôt sur PS5.",
+#else
+                          "Manette seule, clavier et souris, ou les deux en même temps.",
+#endif
+                          Kind::Choice,
                           [&s] { return std::string(s.inputMode == 1 ? "Manette" : s.inputMode == 2 ? "Clavier et souris" : "Les deux"); },
                           [&s](int d) {
                               s.inputMode = (s.inputMode + (d < 0 ? 2 : 1)) % 3;

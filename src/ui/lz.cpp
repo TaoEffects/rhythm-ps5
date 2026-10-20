@@ -584,7 +584,11 @@ void Toolbar::draw(Context &c) {
     // Horloge (sur PS5, l'heure locale n'est pas accessible depuis l'appli pour l'instant).
     time_t now = time(nullptr);
     struct tm lt;
+#if defined(_WIN32)
+    localtime_s(&lt, &now);
+#else
     localtime_r(&now, &lt);
+#endif
     char buf[16];
     snprintf(buf, sizeof(buf), "%02d:%02d", lt.tm_hour, lt.tm_min);
     c.fonts->semibold.drawMid(b, kVW - 20 * U, y + height() / 2, 18 * U, col::white, buf, gfx::Align::Right);

@@ -1,0 +1,3 @@
+// Icône et manifeste de l'exécutable Windows.
+1 ICON "rhythm.ico"
+1 24 "rhythm.manifest"

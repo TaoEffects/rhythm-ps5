@@ -2,6 +2,7 @@
 // Plateforme PC (Linux) : SDL2 pour la fenêtre, les entrées et l'audio. Sert à
 // développer et tester sans la console ; une manette DualSense branchée au PC
 // est gérée par SDL_GameController avec la même correspondance de boutons.
+#define SDL_MAIN_HANDLED  // main() reste le point d'entrée (Windows)
 #include <SDL.h>
 
 #include <cmath>
@@ -13,6 +14,7 @@
 
 #include "core/log.h"
 #include "platform/platform.h"
+#include "render/gl.h"
 
 namespace plat {
 namespace {
@@ -52,6 +54,7 @@ void openFirstPad() {
 }  // namespace
 
 bool init(const InitParams &params) {
+    SDL_SetMainReady();
     if (SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_GAMECONTROLLER) != 0) {
         LOG("sdl2: SDL_Init a echoue: %s", SDL_GetError());
         return false;
@@ -79,6 +82,9 @@ bool init(const InitParams &params) {
         LOG("sdl2: contexte OpenGL 3.3 core impossible: %s", SDL_GetError());
         return false;
     }
+#if defined(_WIN32)
+    if (!gl::loadFunctions([](const char *name) { return SDL_GL_GetProcAddress(name); })) return false;
+#endif
     SDL_GL_SetSwapInterval(1);
     SDL_GL_GetDrawableSize(g_window, &g_width, &g_height);
     openFirstPad();

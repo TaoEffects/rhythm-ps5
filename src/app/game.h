@@ -18,6 +18,7 @@
 #include "game/skin.h"
 #include "net/mirror.h"
 #include "ui/lz.h"
+#include "ui/osk.h"
 
 class Game;
 
@@ -108,6 +109,10 @@ public:
     const gfx::Texture *thumbnail(int setIndex);
     // Dernières entrées (pour les écrans qui en ont besoin au rendu).
     const UiInput &input() const { return lastInput_; }
+    // Saisie de texte : clavier virtuel du jeu sur PS5, saisie directe ailleurs.
+    bool textInputSupported() const;
+    bool startTextInput(const char *title, const std::string &initial);
+    int pollTextInput(std::string &out);
     // Aperçu musical : boucle à partir du PreviewTime.
     void playPreview();
     // Piste du lancement (« triangles » de cYsmix, ressources de lazer) :
@@ -205,4 +210,5 @@ private:
     std::unordered_map<std::string, Thumb> thumbs_;
     std::unordered_map<uint64_t, std::string> thumbTickets_;
     UiInput lastInput_;
+    lz::OnScreenKeyboard osk_;
 };

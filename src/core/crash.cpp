@@ -4,6 +4,15 @@
 #endif
 #include "core/crash.h"
 
+#if defined(_WIN32)
+// Windows : pas de gestionnaire de plantage (signaux POSIX absents).
+extern "C" void rhythm_crash_anchor() {}
+namespace crash {
+void install(const char *) {}
+uintptr_t anchorAddress() { return reinterpret_cast<uintptr_t>(&rhythm_crash_anchor); }
+}  // namespace crash
+#else
+
 #include <fcntl.h>
 #include <pthread.h>
 #include <signal.h>
@@ -111,3 +120,4 @@ void install(const char *logFilePath) {
 }
 
 }  // namespace crash
+#endif

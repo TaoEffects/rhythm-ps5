@@ -170,7 +170,8 @@ public:
     }
 
 private:
-    float facadeY() const { return kVH / 2 - 250 * U; }
+    // Logo en haut du bloc ; le bloc (logo -> mappeur, ~385 u) est centré verticalement.
+    float facadeY() const { return kVH / 2 - 150 * U; }
 
     void prepare() {
         Context &c = game.ctx;

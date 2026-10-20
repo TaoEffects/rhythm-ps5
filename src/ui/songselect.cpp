@@ -144,7 +144,7 @@ public:
         }
         if (imeOpen_) {
             std::string text;
-            const int r = plat::pollTextInput(text);
+            const int r = game.pollTextInput(text);
             if (r != 0) {
                 imeOpen_ = false;
                 if (r > 0) {
@@ -196,9 +196,9 @@ public:
         }
         if (in.extra2) footerAction(0);
         // Recherche au clavier virtuel de la console : clic du pavé tactile ou de la barre.
-        if (plat::textInputSupported() && !imeOpen_ &&
+        if (game.textInputSupported() && !imeOpen_ &&
             (in.touchpadClick || in.clicked(kColW, game.toolbar.height(), kColW, 60 * U))) {
-            imeOpen_ = plat::startTextInput("Rechercher une map", query_);
+            imeOpen_ = game.startTextInput("Rechercher une map", query_);
         }
         if (in.extra) footerAction(1);
         if (in.options) footerAction(2);
@@ -962,7 +962,7 @@ private:
         icon(c, fa::magnifying_glass, bx + 24 * U - kShear * 0, y + 21 * U, 15 * U, pal().light2);
         const bool empty = query_.empty();
         const std::string shown =
-            empty ? (plat::textInputSupported() ? "pavé tactile pour chercher..." : "tape pour chercher...") : query_ + (plat::textInputSupported() ? "" : "_");
+            empty ? (game.textInputSupported() ? "pavé tactile pour chercher..." : "tape pour chercher...") : query_ + (game.textInputSupported() ? "" : "_");
         c.fonts->semibold.drawMid(b, bx + 46 * U, y + 21 * U, 18 * U, empty ? pal().light4 : col::white, shown.c_str());
         char line[64];
         snprintf(line, sizeof(line), i18n::tr("%zu correspondance%s"), visible_.size(), visible_.size() > 1 ? "s" : "");
