@@ -220,6 +220,7 @@
 {"Classement local", "Local ranking"},
 {"Pas encore de score sur cette difficulté.", "No scores on this difficulty yet."},
 {"Tes scores restent sur la console.", "Your scores stay on the console."},
+{"Tes scores restent sur cet appareil.", "Your scores stay on this device."},
 {"il y a %lld min", "%lld min ago"},
 {"il y a %lld h", "%lld h ago"},
 {"il y a %lld j", "%lld d ago"},

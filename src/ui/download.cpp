@@ -19,7 +19,7 @@ namespace {
 using namespace lz;
 
 constexpr int kCols = 3;
-#define kCardW (430 * U)
+#define kCardW std::min(430 * U, (kVW - 80 * U - (kCols - 1) * kGap) / kCols)
 #define kCardH (100 * U)
 #define kGap (10 * U)
 #define kMargin ((kVW - kCols * kCardW - (kCols - 1) * kGap) / 2)
@@ -166,8 +166,14 @@ public:
             if (activate) {
                 const net::RemoteSet &s = results_[static_cast<size_t>(cursor_)];
                 hoverFx_[s.id].trigger(c, 0.4f, 1000);
-                if (c.library->hasSetId(s.id)) {
-                    game.toast("Déjà installée");
+                int installed = -1;
+                const auto &sets = c.library->sets();
+                for (size_t k = 0; k < sets.size(); ++k)
+                    if (sets[k].setId == s.id) installed = static_cast<int>(k);
+                if (installed >= 0) {
+                    c.play(c.sfx->uiSelect);
+                    game.showSet(installed);
+                    return;
                 } else {
                     game.mirror.download(s);
                     c.play(c.sfx->uiSelect);

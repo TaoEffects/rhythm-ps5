@@ -40,6 +40,7 @@ public:
     virtual void render() = 0;
     // Écran de jeu : les boutons servent à frapper, pas à naviguer.
     virtual bool gameplay() const { return false; }
+    virtual bool songSelect() const { return false; }
     bool forward = true;
 
 protected:
@@ -95,6 +96,9 @@ public:
     const game::SetInfo *currentSet() const;
     const game::DiffInfo *currentDiff() const;
     void select(int set, int diff, bool playPreview);
+    // Ferme l'overlay et ouvre la sélection sur cette map (après un téléchargement).
+    void showSet(int set);
+    int jumpToSet = -1;  // lu par la sélection de map si elle est déjà ouverte
 
     // Fond global (image de la map choisie) : assombrissement et flou animés,
     // réglés par chaque écran (comme les BackgroundScreen de lazer).

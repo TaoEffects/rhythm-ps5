@@ -301,6 +301,13 @@ void Game::openOverlay(std::unique_ptr<Screen> overlay) {
     overlay_->enter();
 }
 
+void Game::showSet(int set) {
+    select(set, 0, true);
+    closeOverlay();
+    if (screen_ && screen_->songSelect()) jumpToSet = set;
+    else goTo(makeSongSelect());
+}
+
 void Game::closeOverlay() {
     if (!overlay_) return;
     overlay_->forward = false;

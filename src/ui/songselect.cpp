@@ -80,6 +80,7 @@ const char *const kModColumns[] = {"Réduction de difficulté", "Augmentation de
 class SongSelect : public Screen {
 public:
     using Screen::Screen;
+    bool songSelect() const override { return true; }
 
     void enter() override {
         Context &c = game.ctx;
@@ -141,6 +142,13 @@ public:
         if (lastCount_ != sets.size()) {
             filter();
             rebuild();
+        }
+        if (game.jumpToSet >= 0 && static_cast<size_t>(game.jumpToSet) < sets.size()) {
+            query_.clear();
+            filter();
+            pick(game.jumpToSet, 0);
+            rebuild();
+            game.jumpToSet = -1;
         }
         if (imeOpen_) {
             std::string text;
@@ -915,7 +923,12 @@ private:
             const float a = std::min(1.0f, static_cast<float>((t - boardAt_ - 200) / 300));
             if (a > 0) {
                 c.fonts->regular.draw(b, x0 + 10 * U, y + 10 * U, 16 * U, alpha(pal().content2, a), "Pas encore de score sur cette difficulté.");
-                c.fonts->regular.draw(b, x0 + 10 * U, y + 34 * U, 14 * U, alpha(pal().light4, a), "Tes scores restent sur la console.");
+                c.fonts->regular.draw(b, x0 + 10 * U, y + 34 * U, 14 * U, alpha(pal().light4, a),
+#if defined(__PROSPERO__)
+                                      "Tes scores restent sur la console.");
+#else
+                                      "Tes scores restent sur cet appareil.");
+#endif
             }
         }
         const float maxY = footerTop() - 10 * U;
