@@ -48,13 +48,15 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Outils
-        run: sudo apt-get update && sudo apt-get install -y g++-mingw-w64-x86-64-posix zip unzip curl
+        run: sudo apt-get update && sudo apt-get install -y g++-mingw-w64-x86-64-posix zip unzip curl nsis
       - name: Build
         run: bash packaging/windows/build.sh
       - uses: actions/upload-artifact@v4
         with:
           name: windows
-          path: build/windows/rhythm-ps5-windows.zip
+          path: |
+            build/windows/rhythm-ps5-windows.zip
+            build/windows/rhythm-ps5-setup.exe
 
   release:
     needs: [ps5, macos, windows]
@@ -85,3 +87,4 @@ jobs:
           files: |
             artifacts/**/*.zip
             artifacts/**/*.dmg
+            artifacts/**/*.exe

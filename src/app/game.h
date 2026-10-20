@@ -13,6 +13,9 @@
 #include <pthread.h>
 
 #include "app/context.h"
+#if !defined(__PROSPERO__)
+#include "app/update.h"
+#endif
 #include "game/library.h"
 #include "game/play.h"
 #include "game/skin.h"
@@ -110,6 +113,9 @@ public:
     // Dernières entrées (pour les écrans qui en ont besoin au rendu).
     const UiInput &input() const { return lastInput_; }
     int frameLimit() const { return settings_.frameLimit; }
+#if !defined(__PROSPERO__)
+    upd::Updater &updater() { return updater_; }
+#endif
     // Saisie de texte : clavier virtuel du jeu sur PS5, saisie directe ailleurs.
     bool textInputSupported() const;
     bool startTextInput(const char *title, const std::string &initial);
@@ -213,4 +219,8 @@ private:
     std::unordered_map<uint64_t, std::string> thumbTickets_;
     UiInput lastInput_;
     lz::OnScreenKeyboard osk_;
+#if !defined(__PROSPERO__)
+    upd::Updater updater_;
+    bool updateAnnounced_ = false;
+#endif
 };

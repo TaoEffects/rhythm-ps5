@@ -232,6 +232,9 @@ bool Game::init() {
             else introTrackState_.store(3);
         }
     }
+#if !defined(__PROSPERO__)
+    updater_.start();
+#endif
     goTo(makeIntro());
     return true;
 }
@@ -789,6 +792,13 @@ void Game::frame(const plat::InputState &raw, double now) {
         fpsFrames_ = 0;
     }
     if (raw.quitRequested) exit_ = true;
+#if !defined(__PROSPERO__)
+    if (updater_.available() && !updateAnnounced_ && screen_ && !screen_->gameplay()) {
+        updateAnnounced_ = true;
+        toast(i18n::tr("Mise à jour disponible : ") + updater_.latestTag() + i18n::tr(" (Options > Divers)"));
+    }
+    if (updater_.readyToQuit()) exit_ = true;  // l'installateur prend le relais
+#endif
     // Format de l'écran (fenêtre redimensionnée, plein écran...) : largeur virtuelle.
     if (plat::width() > 0 && plat::height() > 0)
         setVirtualAspect(static_cast<float>(plat::width()) / static_cast<float>(plat::height()));

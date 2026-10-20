@@ -34,7 +34,7 @@ for f in third_party/font8x8/font8x8.c third_party/impl.c third_party/miniz/*.c;
 done
 (cd packaging/windows && x86_64-w64-mingw32-windres rhythm.rc -O coff -o "$out/obj/rhythm.res.o")
 objects+=("$out/obj/rhythm.res.o")
-"$cxx" -o "$out/rhythm-ps5.exe" "${objects[@]}" -L"$sdl/lib" -L"$curl_dir/lib" -lSDL2 -lcurl -lopengl32 -mwindows \
+"$cxx" -o "$out/rhythm-ps5.exe" "${objects[@]}" -L"$sdl/lib" -L"$curl_dir/lib" -lSDL2 -lcurl -lopengl32 -lshell32 -mwindows \
     -static-libgcc -static-libstdc++ -Wl,-Bstatic -lpthread -Wl,-Bdynamic
 pkg="$out/rhythm-ps5-windows"
 rm -rf "$pkg" "$out/rhythm-ps5-windows.zip"
@@ -43,3 +43,9 @@ cp "$out/rhythm-ps5.exe" "$sdl/bin/SDL2.dll" "$curl_dir/bin/libcurl-x64.dll" LIC
 cp -r ps5/assets "$pkg/assets"
 (cd "$out" && zip -qr rhythm-ps5-windows.zip rhythm-ps5-windows)
 echo "-> $out/rhythm-ps5-windows.zip"
+# Installateur (un seul .exe) si NSIS est présent.
+if command -v makensis >/dev/null; then
+    version=$(sed -n 's/^#define RHYTHM_VERSION "\([0-9.]*\).*/\1/p' src/version.h)
+    (cd packaging/windows && makensis -V2 -DVERSION="$version" -DSRC="$pkg" -DOUT="$out/rhythm-ps5-setup.exe" installer.nsi)
+    echo "-> $out/rhythm-ps5-setup.exe"
+fi

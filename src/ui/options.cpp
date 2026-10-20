@@ -535,6 +535,20 @@ private:
         slider("Commandes", "Taille du curseur", "Taille du curseur en jeu.", s.cursorSize, 0.5f, 2.0f, 0.1f,
                [&s] { return pct(s.cursorSize); });
         toggle("Commandes", "Traînée du curseur", "La traînée qui suit le curseur en jeu.", s.cursorTrail);
+#if !defined(__PROSPERO__)
+        items_.push_back({"Divers", "Mise à jour", "Vérifie au lancement s'il existe une version plus récente du jeu.",
+                          Kind::Choice,
+                          [this] {
+                              upd::Updater &u = game.updater();
+                              if (u.downloading())
+                                  return std::string(i18n::tr("Téléchargement... ")) +
+                                         std::to_string(static_cast<int>(u.progress() * 100)) + " %";
+                              if (u.available()) return std::string(i18n::tr("Installer ")) + u.latestTag();
+                              if (u.failed()) return std::string(i18n::tr("Vérification impossible"));
+                              return std::string(i18n::tr("À jour"));
+                          },
+                          [this](int) { game.updater().install(); }, nullptr, nullptr});
+#endif
         items_.push_back({"Divers", "Configuration initiale", "Relance l'assistant du premier lancement (maps de base, façon de jouer...).",
                           Kind::Choice, [] { return std::string("Ouvrir"); },
                           [this](int) {

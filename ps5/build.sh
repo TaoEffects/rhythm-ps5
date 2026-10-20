@@ -118,7 +118,7 @@ common=(-O2 -g -fPIC -ffunction-sections -fdata-sections -fno-omit-frame-pointer
         -DGL_GLEXT_PROTOTYPES=1 "-DRHYTHM_GIT_REV=\"$git_rev\""
         -I"$gl_prefix/include" -I"$root/src" -I"$root/third_party" -I"$root/third_party/font8x8")
 # Toutes les sources du jeu (sauf la plateforme PC) + bibliothèques tierces en C.
-mapfile -t sources < <(cd "$root" && find src -name '*.cpp' ! -name 'platform_sdl2.cpp' | sort)
+mapfile -t sources < <(cd "$root" && find src -name '*.cpp' ! -name 'platform_sdl2.cpp' ! -name 'update.cpp' | sort)
 sources+=(third_party/font8x8/font8x8.c third_party/impl.c third_party/miniz/miniz.c third_party/miniz/miniz_tdef.c
           third_party/miniz/miniz_tinfl.c third_party/miniz/miniz_zip.c)
 objects=()
