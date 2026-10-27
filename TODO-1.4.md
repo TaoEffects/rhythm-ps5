@@ -2,6 +2,11 @@
 
 Rien n'est publié avant ton feu vert.
 
+## Mentions de la console sur PC / Mac
+- [ ] Options > Langue : « Automatique (langue de la console) » apparaît aussi sur ordinateur → « langue du système ».
+- [ ] Assistant de premier lancement : « tes scores restent sur la console » → « sur cet appareil » hors PS5.
+- [ ] Repasser sur tous les textes (FR, EN, JA), dont les astuces et l'aide des options, et le README.
+
 ## Paramètres
 - [x] Clic sur les icônes de section : la liste défile jusqu'à la section (corrigé localement, pas encore publié).
 - [ ] Vérifier le reste à la souris et à la manette : retour, curseurs, assignation des touches.
