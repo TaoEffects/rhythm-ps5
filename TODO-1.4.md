@@ -32,6 +32,9 @@ Rien n'est publié avant ton feu vert.
 - [ ] Importer aussi les .osk et .osz déposés dans le dossier des maps.
 - [ ] Mesurer le temps de chargement d'un skin (beaucoup d'images) et ne charger les éléments d'interface que si le thème classique est actif.
 
+## Musique
+- [ ] Fondu entre deux morceaux (changement de map, suivant / précédent) trop lent : le raccourcir et vérifier qu'il reste propre.
+
 ## Raccourcis clavier (PC / Mac)
 - [ ] Ajouter les raccourcis d'osu! qui manquent : Ctrl+O (options), Ctrl+D (téléchargement), F2 au hasard / Maj+F2 retour arrière, Ctrl+Entrée (Auto), F1 mods, Échap, raccourcis du menu (P jouer, O options, E/Q quitter), Alt+molette volume, F7/F8 et lecteur de musique (Z X C V B), F12 capture, ajustement du décalage en jeu (+ / -), touche de pause, touche « recommencer rapidement » (` maintenue)...
 - [ ] Vérifier lesquels existent déjà, puis les rendre tous reprogrammables dans Options > Commandes (liste des raccourcis, saisie de la nouvelle touche, rétablir les valeurs par défaut).
