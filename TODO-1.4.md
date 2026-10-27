@@ -22,7 +22,7 @@ Rien n'est publié avant ton feu vert.
 - [ ] Relire écran par écran : menu, sélection, partie, résultats, options, téléchargement, assistant de premier lancement.
 
 ## Accès aux fichiers du jeu
-- [ ] PC / Mac : boutons « Ouvrir le dossier » (maps, skins, données) dans les options, via l'explorateur / Finder / xdg-open.
+- [ ] PC / Mac uniquement : bouton dans les paramètres pour ouvrir le dossier du jeu (et ses sous-dossiers maps, skins), via l'Explorateur / le Finder / xdg-open.
 - [ ] Vérifier où se trouvent les données sur chaque système et les afficher dans les options. Envisager un emplacement plus visible (Documents).
 - [ ] PS5 : afficher clairement les chemins (/data/rhythm-ps5/...) et expliquer comment y accéder (FTP).
 
@@ -38,6 +38,11 @@ Rien n'est publié avant ton feu vert.
 ## Raccourcis clavier (PC / Mac)
 - [ ] Ajouter les raccourcis d'osu! qui manquent : Ctrl+O (options), Ctrl+D (téléchargement), F2 au hasard / Maj+F2 retour arrière, Ctrl+Entrée (Auto), F1 mods, Échap, raccourcis du menu (P jouer, O options, E/Q quitter), Alt+molette volume, F7/F8 et lecteur de musique (Z X C V B), F12 capture, ajustement du décalage en jeu (+ / -), touche de pause, touche « recommencer rapidement » (` maintenue)...
 - [ ] Vérifier lesquels existent déjà, puis les rendre tous reprogrammables dans Options > Commandes (liste des raccourcis, saisie de la nouvelle touche, rétablir les valeurs par défaut).
+
+## Profils locaux
+- [ ] Plusieurs profils sur la même machine : nom personnalisé (et avatar ?), réglages, touches, skin, thème et scores propres à chaque profil.
+- [ ] Choix du profil au démarrage (ou depuis la carte du joueur), création, renommage et suppression. Le nom remplace « Joueur local » partout (carte, classement, résultats).
+- [ ] Rangement : un dossier par profil (réglages + scores), maps et skins communs.
 
 ## Écran de résultats (thème moderne)
 - [ ] Le refaire : aujourd'hui très lazer (anneau au centre) et mal fini. Viser un entre-deux lazer / stable : moderne mais lisible d'un coup d'œil, avec l'espace de l'écran utilisé.
