@@ -4,6 +4,7 @@
 // bouton retour, curseur.
 #pragma once
 
+#include <ctime>
 #include <string>
 #include <vector>
 
@@ -59,6 +60,9 @@ struct PlayerStats {
 PlayerStats playerStats(const std::vector<::LocalScore> &scores);
 // Carte du joueur (avatar, nom, performance, précision, niveau) dans le rectangle donné.
 void userCard(Context &c, const PlayerStats &s, float x, float y, float w, float h, float hover = 0, float alpha = 1);
+
+// Heure locale (false sur PS5, où elle n'est pas accessible depuis l'appli).
+bool localTime(long long t, struct ::tm &out);
 
 // Score avec séparateurs de milliers.
 std::string grouped(long long v);

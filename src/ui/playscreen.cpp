@@ -421,7 +421,7 @@ private:
             b.quad(bg->tex, kVW / 2 - bg->w() * s / 2, kVH / 2 - bg->h() * s / 2, bg->w() * s, bg->h() * s, alpha(col::white, d));
         } else if (failMenu_) {
             b.gradient(0, 0, kVW, kVH, gfx::rgba(120, 0, 10, static_cast<uint8_t>(140 * d)), gfx::rgba(30, 0, 0, static_cast<uint8_t>(200 * d)));
-            c.fonts->bold.drawShadow(b, kVW / 2, 70 * k, 110 * k, alpha(hex(0xff5566), d), "Échec", gfx::Align::Center);
+            c.fonts->light.drawShadow(b, kVW / 2, 70 * k, 110 * k, alpha(hex(0xff5566), d), "Échec", gfx::Align::Center);
         } else {
             b.gradient(0, 0, kVW, kVH * 0.35f, gfx::rgba(0, 0, 0, static_cast<uint8_t>(120 * d)), gfx::rgba(0, 0, 0, 0));
             b.gradient(0, kVH * 0.65f, kVW, kVH * 0.35f, gfx::rgba(0, 0, 0, 0), gfx::rgba(0, 0, 0, static_cast<uint8_t>(120 * d)));
@@ -429,7 +429,7 @@ private:
         const float ba = 1 - std::pow(1 - d, 3.0f);
         const int n = failMenu_ ? 2 : 3;
         static const char *const kLabels[3] = {"Continuer", "Recommencer", "Retour au menu"};
-        static const uint32_t kCols[3] = {hex(0x2fb84a), hex(0xf2b01e), hex(0xe0304a)};
+        static const uint32_t kCols[3] = {hex(0x3a9d4e), hex(0xd99a1e), hex(0xc8323c)};
         for (int i = 0; i < n; ++i) {
             const int slot = failMenu_ ? i + 1 : i;
             float x, y, w, h;
@@ -439,14 +439,14 @@ private:
             if (const game::SkinSprite *s = stableSprite(slot)) {
                 b.quad(s->tex, x, y, w, h, col::white);
             } else {
+                // Bande plate comme les panneaux du thème classique : léger dégradé, liseré fin.
                 const uint32_t cc = kCols[slot];
-                b.shadow(x, y, w, h, h / 2, 22 * k, alpha(cc, 0.45f));
-                b.roundRectGradient(x, y, w, h, h / 2, gfx::Corners::vertical(lighten(cc, 0.35f), darken(cc, 0.35f)));
-                b.roundRectGradient(x + 6 * k, y + 5 * k, w - 12 * k, h * 0.45f, h * 0.4f,
-                                    gfx::Corners::vertical(alpha(col::white, 0.35f), alpha(col::white, 0.04f)));
-                b.roundRectBorder(x, y, w, h, h / 2, 3 * k, alpha(col::white, 0.85f));
-                c.fonts->bold.drawShadow(b, x + w / 2, c.fonts->bold.topForCenter(y + h / 2, 50 * k), 50 * k, col::white, kLabels[slot],
-                                         gfx::Align::Center);
+                b.shadow(x, y + 4 * k, w, h, 8 * k, 16 * k, gfx::rgba(0, 0, 0, 120));
+                b.roundRectGradient(x, y, w, h, 8 * k, gfx::Corners::vertical(lighten(cc, 0.12f), darken(cc, 0.2f)));
+                b.roundRect(x, y, w, 2 * k, k, alpha(col::white, 0.3f));
+                b.roundRectBorder(x, y, w, h, 8 * k, 1.5f * k, alpha(col::white, 0.35f));
+                c.fonts->regular.drawShadow(b, x + w / 2, c.fonts->regular.topForCenter(y + h / 2, 54 * k), 54 * k, col::white, kLabels[slot],
+                                            gfx::Align::Center);
             }
             b.popTransform();
         }

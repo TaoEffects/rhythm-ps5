@@ -16,7 +16,8 @@ controller-first interface inspired by osu!lazer.
 - osu!standard gameplay: circles, sliders, spinners, score, accuracy, health.
 - Mods: Easy, No Fail, Half Time, Hard Rock, Double Time, Nightcore, Hidden, Auto.
   DT / HT keep the original pitch.
-- lazer-style interface: intro, main menu, song select, mods, pause, results, options.
+- Two interface themes: modern (lazer-style) and classic (laid out like osu!stable: main menu,
+  song select, mod select, results, pause, in-game HUD), switchable in Options > Interface.
 - In-game beatmap downloads (community mirror osu.direct), search with the console's
   on-screen keyboard, original-language metadata (Japanese...).
 - Storyboards.

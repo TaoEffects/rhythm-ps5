@@ -99,11 +99,13 @@ public:
         }
         char line[128];
         char date[64];
-        const time_t tt = static_cast<time_t>(played_);
         struct tm lt;
-        localtime_r(&tt, &lt);
-        strftime(date, sizeof(date), "%d.%m.%Y %H:%M:%S", &lt);
-        snprintf(line, sizeof(line), i18n::tr("Jouée par %s le %s."), i18n::tr("Joueur local"), date);
+        if (st::localTime(played_, lt)) {
+            strftime(date, sizeof(date), "%d.%m.%Y %H:%M:%S", &lt);
+            snprintf(line, sizeof(line), i18n::tr("Jouée par %s le %s."), i18n::tr("Joueur local"), date);
+        } else {
+            snprintf(line, sizeof(line), i18n::tr("Jouée par %s."), i18n::tr("Joueur local"));
+        }
         c.fonts->regular.drawShadow(b, 8 * K(), 70 * K(), 30 * K(), st::col::white, line);
         const float tf = 112 * K();
         const char *head = r_.failed ? "Échec" : "Classement";

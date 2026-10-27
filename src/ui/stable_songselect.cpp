@@ -602,7 +602,7 @@ private:
         capText(c.fonts->regular, tx, y + 58.7f * sy, 14 * sy, gfx::withAlpha(text, textA), artist + " // " + s.creator, maxW);
         if (!isDiff) return;
         const game::DiffInfo &d = s.diffs[static_cast<size_t>(it.diff)];
-        capText(c.fonts->bold, tx, y + 85 * sy, 17 * sy, text, d.version, maxW);
+        capText(c.fonts->semibold, tx, y + 85 * sy, 16 * sy, text, d.version, maxW);
         // Étoiles : pleines, partielle, puis vides jusqu'à 10.
         const float st0 = 24 * sy, cy = y + 0.85f * h;
         const float stars = d.stars >= 0 ? std::min(d.stars, 25.0f) : 0;
@@ -649,7 +649,7 @@ private:
             const bool on = c.settings->songSort == i;
             const bool hv = game.input().mouseActive && game.input().hover(x, y, w, h);
             b.roundRect(x, y, w, h + 6 * K(), 4 * K(), on ? hex(0xffffff) : hv ? hex(0xe0405a) : hex(0xc81e3c));
-            c.fonts->semibold.drawMid(b, x + w / 2, y + h / 2 + 2 * K(), 20 * K(), on ? st::col::black : st::col::white, kSorts[i],
+            c.fonts->regular.drawMid(b, x + w / 2, y + h / 2 + 2 * K(), 21 * K(), on ? st::col::black : st::col::white, kSorts[i],
                                       gfx::Align::Center);
         }
         if (visible_.empty()) return;
@@ -671,7 +671,7 @@ private:
         snprintf(line, sizeof(line), i18n::tr("Durée : %02d:%02d  BPM : %.0f  Objets : %d"), secs / 60, secs % 60, d.bpm * rate, d.objects);
         capText(c.fonts->semibold, 8 * K(), 75 * K(), 14 * K(), speedCol, line, maxW);
         snprintf(line, sizeof(line), i18n::tr("Cercles : %d  Sliders : %d  Spinners : %d"), d.circles, d.sliders, d.spinners);
-        capText(c.fonts->semibold, 8 * K(), 96 * K(), 14 * K(), st::col::white, line, maxW);
+        capText(c.fonts->regular, 8 * K(), 96 * K(), 14 * K(), st::col::white, line, maxW);
         // Attributs (modifiés par EZ / HR) et étoiles.
         float cs = d.cs, ar = d.ar, od = d.od, hp = d.hp;
         if (game.mods.easy) cs *= 0.5f, ar *= 0.5f, od *= 0.5f, hp *= 0.5f;
@@ -703,8 +703,8 @@ private:
         b.roundRect(x, y, w, h, 4 * K(), gfx::rgba(0, 0, 0, query_.empty() ? 110 : 160));
         const float ly = y + 0.6f * L;
         c.fonts->semibold.drawShadow(b, x + L / 2, ly, L, hex(0x00ff00), "Recherche : ");
-        c.fonts->semibold.drawShadow(b, x + L / 2 + prefixW, ly, L, st::col::white, shown.c_str());
-        if (!query_.empty()) c.fonts->semibold.drawShadow(b, x + L / 2, ly + 1.4f * L, L, st::col::white, line);
+        c.fonts->regular.drawShadow(b, x + L / 2 + prefixW, ly, L, st::col::white, shown.c_str());
+        if (!query_.empty()) c.fonts->regular.drawShadow(b, x + L / 2, ly + 1.4f * L, L, st::col::white, line);
     }
 
     void renderLeaderboard() {
@@ -747,13 +747,13 @@ private:
             snprintf(line, sizeof(line), i18n::tr("Score : %s (%dx)"), st::grouped(sc.score).c_str(), sc.maxCombo);
             capText(c.fonts->regular, tx, y + 0.75f * rh + 0.08f * rh - 0.0625f * rh, 0.18f * rh, st::col::white, line);
             const float rx = x0 + rw - 0.025f * rw, T = rh / 3;
-            if (!sc.mods.empty()) capText(c.fonts->semibold, rx, T / 2 + 0.25f * T + y + 0.135f * T, 0.45f * T, st::col::white, sc.mods, 0,
+            if (!sc.mods.empty()) capText(c.fonts->regular, rx, T / 2 + 0.25f * T + y + 0.135f * T, 0.45f * T, st::col::white, sc.mods, 0,
                                           gfx::Align::Right);
             snprintf(line, sizeof(line), "%.2f%%", sc.accuracy * 100);
-            capText(c.fonts->semibold, rx, y + 1.5f * T + 0.25f * T, 0.45f * T, st::col::white, line, 0, gfx::Align::Right);
+            capText(c.fonts->regular, rx, y + 1.5f * T + 0.25f * T, 0.45f * T, st::col::white, line, 0, gfx::Align::Right);
             if (sc.pp > 0) {
                 snprintf(line, sizeof(line), "%.0fpp", sc.pp);
-                capText(c.fonts->semibold, rx, y + 2.5f * T + 0.2f * T, 0.38f * T, hex(0xaaaaaa), line, 0, gfx::Align::Right);
+                capText(c.fonts->regular, rx, y + 2.5f * T + 0.2f * T, 0.38f * T, hex(0xaaaaaa), line, 0, gfx::Align::Right);
             }
             // Score récent (moins de 96 h) : flèche et âge, juste à droite de la ligne.
             const long long age = static_cast<long long>(time(nullptr)) - sc.date;
@@ -809,7 +809,7 @@ private:
         if (!mods.empty()) {
             float x, yy, w, h;
             navRect(1, x, yy, w, h);
-            c.fonts->bold.drawShadow(b, x + w / 2, yy - 22 * K(), 20 * K(), hex(0xffcc22), mods.c_str(), gfx::Align::Center);
+            c.fonts->semibold.drawShadow(b, x + w / 2, yy - 22 * K(), 20 * K(), hex(0xffcc22), mods.c_str(), gfx::Align::Center);
         }
         // Carte du joueur.
         float ox, oy, ow, oh;
@@ -937,11 +937,11 @@ private:
         char line[96];
         const float mult = game.mods.scoreMultiplier();
         snprintf(line, sizeof(line), i18n::tr("Multiplicateur de score : %.2fx"), mult);
-        c.fonts->semibold.drawShadow(b, kVW / 2, kVH * 0.06f + 108 * K(), 24 * K(),
+        c.fonts->regular.drawShadow(b, kVW / 2, kVH * 0.06f + 108 * K(), 25 * K(),
                                      mult > 1.001f ? hex(0xff7f7f) : mult < 0.999f ? hex(0x99ee66) : st::col::white, line, gfx::Align::Center);
         for (int row = 0; row < 3; ++row) {
             const float cy = kVH * 0.3f + static_cast<float>(row) * 170 * K();
-            c.fonts->semibold.drawShadow(b, kVW / 2 - 300 * K(), c.fonts->semibold.topForCenter(cy, 26 * K()), 26 * K(), kModRowColours[row],
+            c.fonts->regular.drawShadow(b, kVW / 2 - 300 * K(), c.fonts->regular.topForCenter(cy, 28 * K()), 28 * K(), kModRowColours[row],
                                          kModRows[row], gfx::Align::Right);
         }
         for (int i = 0; i < kModCount; ++i) {
@@ -966,13 +966,13 @@ private:
                 b.shape(1, cx, cy, r, r, r * 0.32f, 0, 0, gfx::Corners::solid(alpha(st::col::white, 0.5f * fl)), 0, ang);
                 b.setBlend(gfx::Blend::Alpha);
             }
-            c.fonts->bold.drawMid(b, cx, cy, 34 * K() * sc, on ? st::col::white : alpha(st::col::white, 0.6f), d.acronym, gfx::Align::Center);
+            c.fonts->semibold.drawMid(b, cx, cy, 34 * K() * sc, on ? st::col::white : alpha(st::col::white, 0.6f), d.acronym, gfx::Align::Center);
             if (sel && (modKeyboard_ || !game.input().mouseActive))
                 b.shape(1, cx, cy, r + 8 * K(), r + 8 * K(), (r + 8 * K()) * 0.32f, 2.5f * K(), 0, gfx::Corners::solid(hex(0xffcc22)), 0, ang);
         }
         // Nom et description du mod survolé.
         const ModDef &d = kMods[modCursor_];
-        c.fonts->bold.drawShadow(b, kVW / 2, kVH * 0.3f + 2 * 170 * K() + 70 * K(), 28 * K(), st::col::white, d.name, gfx::Align::Center);
+        c.fonts->regular.drawShadow(b, kVW / 2, kVH * 0.3f + 2 * 170 * K() + 70 * K(), 30 * K(), st::col::white, d.name, gfx::Align::Center);
         c.fonts->regular.drawShadow(b, kVW / 2, kVH * 0.3f + 2 * 170 * K() + 106 * K(), 22 * K(), hex(0xdddddd), d.desc, gfx::Align::Center);
         const UiInput &in = game.input();
         static const char *const kButtons[2] = {"Retirer tous les mods", "Fermer"};
@@ -984,7 +984,7 @@ private:
             b.roundRectGradient(x, y, w, h, 10 * K(),
                                 gfx::Corners::vertical(lz::lighten(kButtonCols[i], hv ? 0.45f : 0.2f), lz::darken(kButtonCols[i], 0.3f)));
             b.roundRectBorder(x, y, w, h, 10 * K(), 2 * K(), alpha(st::col::white, 0.7f));
-            c.fonts->bold.drawMid(b, x + w / 2, y + h / 2, 26 * K(), st::col::white, kButtons[i], gfx::Align::Center);
+            c.fonts->regular.drawMid(b, x + w / 2, y + h / 2, 27 * K(), st::col::white, kButtons[i], gfx::Align::Center);
         }
         b.popTransform();
     }

@@ -1290,7 +1290,7 @@ void Play::renderHudStable(Context &ctx, double t) {
             const float w = ks * 0.62f * s, h = ks * 0.62f * s;
             b.roundRect(cx - w / 2, cy - h / 2, w, h, 5 * o, on ? gfx::rgba(255, 222, 0) : white);
             snprintf(line, sizeof(line), "%d", keyCount_[i]);
-            ctx.fonts->bold.drawMid(b, cx, cy, h * 0.42f, gfx::rgba(0, 0, 0), keyCount_[i] ? line : (i ? "K2" : "K1"), gfx::Align::Center);
+            ctx.fonts->semibold.drawMid(b, cx, cy, h * 0.42f, gfx::rgba(0, 0, 0), keyCount_[i] ? line : (i ? "K2" : "K1"), gfx::Align::Center);
         }
     }
 
@@ -1300,8 +1300,8 @@ void Play::renderHudStable(Context &ctx, double t) {
         const float w = 180 * k * 0.75f, h = 62 * k * 0.75f, x = kVW - w - 24 * k, y = kVH - h - 4 * k;
         b.roundRect(x, y, w + 20 * k, h, 10 * k, gfx::rgba(20, 20, 30, static_cast<uint8_t>(190 * pulse)));
         b.roundRectBorder(x, y, w + 20 * k, h, 10 * k, 1.5f * k, gfx::withAlpha(white, 0.6f * pulse));
-        ctx.fonts->bold.drawMid(b, x + w * 0.45f, y + h / 2, 22 * k, gfx::withAlpha(white, pulse), "Passer", gfx::Align::Center);
-        ctx.fonts->bold.drawMid(b, x + w * 0.85f, y + h / 2, 22 * k, gfx::withAlpha(gfx::rgba(255, 204, 34), pulse), ">>",
+        ctx.fonts->regular.drawMid(b, x + w * 0.45f, y + h / 2, 24 * k, gfx::withAlpha(white, pulse), "Passer", gfx::Align::Center);
+        ctx.fonts->regular.drawMid(b, x + w * 0.85f, y + h / 2, 24 * k, gfx::withAlpha(gfx::rgba(255, 204, 34), pulse), ">>",
                                 gfx::Align::Center);
     }
     (void)t;

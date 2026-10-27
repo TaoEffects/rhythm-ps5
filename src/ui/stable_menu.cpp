@@ -347,11 +347,11 @@ private:
         else snprintf(line, sizeof(line), i18n::tr("rhythm tourne depuis %ld:%02ld:%02ld."), run / 3600, run / 60 % 60, run % 60);
         c.fonts->regular.drawShadow(b, x, y, fs, st::col::white, line);
         y += 31 * K();
-        const time_t now = time(nullptr);
         struct tm lt;
-        localtime_r(&now, &lt);
-        snprintf(line, sizeof(line), i18n::tr("Il est %d:%02d."), lt.tm_hour, lt.tm_min);
-        c.fonts->regular.drawShadow(b, x, y, fs, st::col::white, line);
+        if (st::localTime(static_cast<long long>(time(nullptr)), lt)) {
+            snprintf(line, sizeof(line), i18n::tr("Il est %d:%02d."), lt.tm_hour, lt.tm_min);
+            c.fonts->regular.drawShadow(b, x, y, fs, st::col::white, line);
+        }
     }
 
     // En haut à droite : « En cours ♪ Artiste - Titre », puis précédent, lecture,
@@ -451,11 +451,11 @@ private:
         const char *tip = kTips[tip_ % (sizeof(kTips) / sizeof(kTips[0]))];
         c.fonts->regular.drawShadow(b, kVW / 2, c.fonts->regular.topForCenter(cy - 12 * K(), 30 * K()), 30 * K(), st::col::white, tip,
                                     gfx::Align::Center);
-        c.fonts->bold.drawShadow(b, 10 * K(), c.fonts->bold.topForCenter(kVH - 34 * K(), 44 * K()), 44 * K(), st::col::white, "rhythm");
-        const float bw = c.fonts->bold.measure(44 * K(), "rhythm");
+        c.fonts->semibold.drawShadow(b, 10 * K(), c.fonts->semibold.topForCenter(kVH - 34 * K(), 44 * K()), 44 * K(), st::col::white, "rhythm");
+        const float bw = c.fonts->semibold.measure(44 * K(), "rhythm");
         char line[96];
         snprintf(line, sizeof(line), "%s %s", i18n::tr("version"), RHYTHM_VERSION);
-        c.fonts->semibold.drawShadow(b, 18 * K() + bw, kVH - 52 * K(), 17 * K(), alpha(st::col::white, 0.85f), line);
+        c.fonts->regular.drawShadow(b, 18 * K() + bw, kVH - 52 * K(), 17 * K(), alpha(st::col::white, 0.85f), line);
         c.fonts->regular.drawShadow(b, 18 * K() + bw, kVH - 33 * K(), 17 * K(), alpha(st::col::white, 0.7f), "projet libre, sans lien avec osu!");
     }
 

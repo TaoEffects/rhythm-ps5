@@ -49,9 +49,9 @@ float number(Context &c, const std::string &text, float x, float y, float h, uin
     // Sans skin : chiffres épais à contour sombre, comme les polices de score de stable.
     const gfx::Align a = align == 0 ? gfx::Align::Left : align == 1 ? gfx::Align::Center : gfx::Align::Right;
     const float size = h * 1.18f;
-    const gfx::Font &f = c.fonts->semibold;
+    const gfx::Font &f = c.fonts->regular;
     const float top = f.topForCenter(y + h / 2, size);
-    f.drawSdf(b, x, top, size, gfx::rgba(0, 0, 0, static_cast<uint8_t>(((color >> 24) & 0xff) * 0.75f)), text.c_str(), a, 0, 0.14f, 0.06f);
+    f.drawSdf(b, x, top, size, gfx::rgba(0, 0, 0, static_cast<uint8_t>(((color >> 24) & 0xff) * 0.7f)), text.c_str(), a, 0, 0.1f, 0.05f);
     return f.draw(b, x, top, size, color, text.c_str(), a);
 }
 
@@ -83,6 +83,21 @@ void rankLetter(Context &c, const std::string &rank, bool silver, float cx, floa
         f.draw(b, cx, top, size, gfx::withAlpha(lz::lighten(rc, 0.25f), alpha), txt, gfx::Align::Center, sp);
         b.popClip();
     }
+}
+
+bool localTime(long long t, struct ::tm &out) {
+#if defined(__PROSPERO__)
+    (void)t;
+    (void)out;
+    return false;
+#else
+    const time_t tt = static_cast<time_t>(t);
+#if defined(_WIN32)
+    return localtime_s(&out, &tt) == 0;
+#else
+    return localtime_r(&tt, &out) != nullptr;
+#endif
+#endif
 }
 
 std::string grouped(long long v) {
@@ -215,11 +230,11 @@ void userCard(Context &c, const PlayerStats &s, float x, float y, float w, float
     c.fonts->regular.drawShadow(b, tx, y + h * 0.04f, h * 0.25f, lz::col::white, "Joueur local");
     char line[96];
     snprintf(line, sizeof(line), i18n::tr("Performance : %spp"), grouped(std::llround(s.pp)).c_str());
-    c.fonts->semibold.drawShadow(b, tx, y + h * 0.36f, h * 0.15f, lz::col::white, line);
+    c.fonts->regular.drawShadow(b, tx, y + h * 0.36f, h * 0.15f, lz::col::white, line);
     snprintf(line, sizeof(line), i18n::tr("Précision : %.2f%%"), s.accuracy * 100);
-    c.fonts->semibold.drawShadow(b, tx, y + h * 0.54f, h * 0.15f, lz::col::white, line);
+    c.fonts->regular.drawShadow(b, tx, y + h * 0.54f, h * 0.15f, lz::col::white, line);
     snprintf(line, sizeof(line), i18n::tr("Niv. %d"), s.level);
-    const float lw = c.fonts->semibold.drawShadow(b, tx, y + h * 0.74f, h * 0.15f, lz::col::white, line);
+    const float lw = c.fonts->regular.drawShadow(b, tx, y + h * 0.74f, h * 0.15f, lz::col::white, line);
     const float bx = tx + lw + h * 0.08f, by = y + h * 0.77f, bw = x + w - pad - bx, bh = h * 0.1f;
     if (bw > 10) {
         b.roundRect(bx, by, bw, bh, bh / 2, gfx::rgba(64, 64, 64));
