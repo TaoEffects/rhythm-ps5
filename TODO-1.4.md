@@ -39,6 +39,13 @@ Rien n'est publié avant ton feu vert.
 - [ ] Ajouter les raccourcis d'osu! qui manquent : Ctrl+O (options), Ctrl+D (téléchargement), F2 au hasard / Maj+F2 retour arrière, Ctrl+Entrée (Auto), F1 mods, Échap, raccourcis du menu (P jouer, O options, E/Q quitter), Alt+molette volume, F7/F8 et lecteur de musique (Z X C V B), F12 capture, ajustement du décalage en jeu (+ / -), touche de pause, touche « recommencer rapidement » (` maintenue)...
 - [ ] Vérifier lesquels existent déjà, puis les rendre tous reprogrammables dans Options > Commandes (liste des raccourcis, saisie de la nouvelle touche, rétablir les valeurs par défaut).
 
+## Écran de résultats (thème moderne)
+- [ ] Le refaire : aujourd'hui très lazer (anneau au centre) et mal fini. Viser un entre-deux lazer / stable : moderne mais lisible d'un coup d'œil, avec l'espace de l'écran utilisé.
+  - Grande lettre de rang et score bien visibles.
+  - Jugements (300 / 100 / 50 / ratés), combo, précision, pp, UR et courbe de vie lisibles sans chercher.
+  - Animations d'arrivée soignées.
+- [ ] Le maquetter et comparer avec stable et lazer avant de le finaliser.
+
 ## Personnalisation des skins
 - [ ] Options de skin à la manière d'osu! : ignorer les couleurs de combo de la map (couleurs du skin seulement), ignorer les sons de la map (hitsounds du skin seulement), ignorer le skin de la map, choix de la couleur des combos, taille du curseur et de la traînée par skin, réglages des sliders (épaisseur du contour, couleur), etc.
 
