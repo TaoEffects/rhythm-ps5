@@ -49,7 +49,8 @@ struct Settings {
     bool originalMetadata = false;
     float uiScale = 1.0f;           // taille de l'interface (0,8 à 1,3)
     int inputMode = 0;              // 0 manette + clavier/souris, 1 manette, 2 clavier/souris
-    int uiTheme = 0;                // 0 moderne (lazer) ; stable et classique à venir  // titres et artistes dans leur langue d'origine (japonais...)
+    int songSort = 0;               // tri de la sélection classique : 0 titre, 1 artiste, 2 mappeur, 3 difficulté
+    int uiTheme = 0;                // 0 moderne (façon lazer), 1 classique (façon stable)
     bool firstRunDone = false;     // maps de base proposées au premier lancement
     int version = 2;               // version du fichier (migrations des valeurs par défaut)
     int skin = 1;                  // style de jeu : 0 épuré (façon WhiteCat), 1 triangles (façon lazer), 2 skin osu!

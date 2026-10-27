@@ -73,6 +73,8 @@ public:
     // Overlays par-dessus l'écran courant (options, téléchargement).
     void openOverlay(std::unique_ptr<Screen> overlay);
     void closeOverlay();
+    // Thème changé dans les options : l'écran courant est recréé dans le nouveau thème.
+    void applyTheme();
     bool overlayOpen() const { return overlay_ != nullptr; }
     std::unique_ptr<Screen> makeIntro();
     std::unique_ptr<Screen> makeFirstRun();
@@ -136,6 +138,7 @@ public:
 
     // Scores locaux.
     std::vector<LocalScore> scoresFor(const std::string &key) const;
+    const std::vector<LocalScore> &allScores() const { return scores_; }
     void addScore(const LocalScore &s);
     static std::string diffKey(const game::SetInfo &set, const game::DiffInfo &diff);
 
@@ -180,6 +183,10 @@ private:
     std::unique_ptr<Screen> overlay_, overlayLeaving_;
     double overlayLeaveUntil_ = 0;
     bool exit_ = false;
+    bool themeChanged_ = false;
+    int loadedFontTheme_ = -1;
+    bool cjkFailed_ = false;
+    void loadFonts();
     double perfLast_ = 0, perfUpdate_ = 0, perfBuild_ = 0, perfSubmit_ = 0, perfSwap_ = 0, perfFrameMax_ = 0, perfSwapMax_ = 0;
     int perfFrames_ = 0;
     void handleToolbar(const UiInput &in);

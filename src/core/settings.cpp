@@ -72,7 +72,8 @@ bool Settings::load(const std::string &path) {
         else if (key == "original_metadata") originalMetadata = i != 0;
         else if (key == "ui_scale") uiScale = clampf(f, 0.8f, 1.3f);
         else if (key == "input_mode") inputMode = i >= 0 && i <= 2 ? i : 0;
-        else if (key == "ui_theme") uiTheme = 0;
+        else if (key == "song_sort") songSort = i >= 0 && i <= 3 ? i : 0;
+        else if (key == "ui_theme") uiTheme = i == 1 ? 1 : 0;
     }
     // Version 2 : 120 Hz et style « triangles » par défaut pour tout le monde.
     if (version < 2) {
@@ -136,6 +137,7 @@ bool Settings::save(const std::string &path) const {
     put("original_metadata", "%d", originalMetadata ? 1 : 0);
     put("ui_scale", "%.2f", static_cast<double>(uiScale));
     put("input_mode", "%d", inputMode);
+    put("song_sort", "%d", songSort);
     put("ui_theme", "%d", uiTheme);
     return fsu::writeFileAtomic(path, out.data(), out.size());
 }

@@ -17,6 +17,7 @@
 #include "core/log.h"
 #include "game/library.h"
 #include "ui/lz.h"
+#include "ui/stable.h"
 
 namespace {
 
@@ -258,13 +259,16 @@ public:
             if (in.down) cursor_ = (cursor_ + 1) % n;
             if (in.up || in.down) c.play(c.sfx->uiHover, 0.8f);
             bool activate = in.confirm;
+            if (in.up || in.down) keyboardNav_ = true;
             for (int i = 0; i < n; ++i) {
-                const float y = buttonY(i, n);
-                if (in.hover(0, y - 40 * U, kVW, 80 * U) && in.mouseMoved && cursor_ != i) {
+                float bx, by, bw, bh;
+                buttonRect(i, bx, by, bw, bh);
+                if (in.hover(bx, by, bw, bh) && in.mouseMoved && cursor_ != i) {
                     cursor_ = i;
+                    keyboardNav_ = false;
                     c.play(c.sfx->uiHover, 0.7f);
                 }
-                if (in.clicked(0, y - 40 * U, kVW, 80 * U)) {
+                if (in.clicked(bx, by, bw, bh)) {
                     cursor_ = i;
                     activate = true;
                 }
@@ -307,6 +311,7 @@ public:
             return;
         }
         if (in.extra && play_.canSkip()) play_.skip(c);
+        if (stable() && in.mouseClick && play_.canSkip() && play_.skipButtonHit(in.mouseX, in.mouseY)) play_.skip(c);
         storyboard_.update();
         play_.update(c, in);
         if (play_.finished() && !leaving_) {
@@ -361,7 +366,9 @@ private:
         Context &c = game.ctx;
         failMenu_ = fail;
         cursor_ = 0;
-        menuA_.go(ms(c), 1, 200, Ease::In);
+        keyboardNav_ = false;
+        menuAt_ = ms(c);
+        menuA_.go(ms(c), 1, stable() ? 150 : 200, stable() ? Ease::Out : Ease::In);
         c.play(fail ? c.sfx->uiError : c.sfx->uiOpen, 0.7f);
     }
     void resume() {
@@ -371,10 +378,112 @@ private:
     }
 
     float buttonY(int i, int n) const { return kVH / 2 + 40 * U + (static_cast<float>(i) - (n - 1) / 2.0f) * (80 * U + 2 * U); }
+    bool stable() const { return game.ctx.settings->uiTheme == 1; }
+
+    // Zone cliquable d'un bouton du menu. Thème classique (stable) : trois emplacements
+    // sur la hauteur de l'écran, Continuer gardant sa place même absent (échec).
+    void buttonRect(int i, float &x, float &y, float &w, float &h) const {
+        const int n = failMenu_ ? 2 : 3;
+        if (!stable()) {
+            x = 0, y = buttonY(i, n) - 40 * U, w = kVW, h = 80 * U;
+            return;
+        }
+        const float k = kVH / 1080.0f;
+        const int slot = failMenu_ ? i + 1 : i;
+        w = 576 * k;
+        h = stableButtonH(slot);
+        x = kVW / 2 - w / 2;
+        y = slot == 0 ? 360 * k - h : slot == 1 ? 540 * k - h / 2 : 720 * k;
+    }
+    const game::SkinSprite *stableSprite(int slot) const {
+        const game::Skin *sk = game.ctx.skin;
+        if (!sk) return nullptr;
+        const game::SkinSprite &s = slot == 0 ? sk->ui.pauseContinue : slot == 1 ? sk->ui.pauseRetry : sk->ui.pauseBack;
+        return s.ok() ? &s : nullptr;
+    }
+    float stableButtonH(int slot) const {
+        const float k = kVH / 1080.0f;
+        if (const game::SkinSprite *s = stableSprite(slot)) return s->h() * 576 * k / std::max(1.0f, s->w());
+        return 132 * k;
+    }
+
+    // Pause et échec façon stable : voile sombre, trois gros boutons, flèches bleues au clavier.
+    void renderMenuStable(float d) {
+        Context &c = game.ctx;
+        gfx::SpriteBatch &b = *c.batch;
+        const double t = ms(c);
+        const float k = kVH / 1080.0f;
+        b.rect(0, 0, kVW, kVH, gfx::rgba(20, 20, 20, static_cast<uint8_t>(0.58f * 255 * d)));
+        const game::Skin *sk = c.skin;
+        const game::SkinSprite *bg = sk ? (failMenu_ ? &sk->ui.failBackground : &sk->ui.pauseOverlay) : nullptr;
+        if (bg && bg->ok()) {
+            const float s = std::max(kVW / bg->w(), kVH / bg->h());
+            b.quad(bg->tex, kVW / 2 - bg->w() * s / 2, kVH / 2 - bg->h() * s / 2, bg->w() * s, bg->h() * s, alpha(col::white, d));
+        } else if (failMenu_) {
+            b.gradient(0, 0, kVW, kVH, gfx::rgba(120, 0, 10, static_cast<uint8_t>(140 * d)), gfx::rgba(30, 0, 0, static_cast<uint8_t>(200 * d)));
+            c.fonts->light.drawShadow(b, kVW / 2, 70 * k, 110 * k, alpha(hex(0xff5566), d), "Échec", gfx::Align::Center);
+        } else {
+            b.gradient(0, 0, kVW, kVH * 0.35f, gfx::rgba(0, 0, 0, static_cast<uint8_t>(120 * d)), gfx::rgba(0, 0, 0, 0));
+            b.gradient(0, kVH * 0.65f, kVW, kVH * 0.35f, gfx::rgba(0, 0, 0, 0), gfx::rgba(0, 0, 0, static_cast<uint8_t>(120 * d)));
+        }
+        const float ba = 1 - std::pow(1 - d, 3.0f);
+        const int n = failMenu_ ? 2 : 3;
+        static const char *const kLabels[3] = {"Continuer", "Recommencer", "Retour au menu"};
+        static const uint32_t kCols[3] = {hex(0x3a9d4e), hex(0xd99a1e), hex(0xc8323c)};
+        for (int i = 0; i < n; ++i) {
+            const int slot = failMenu_ ? i + 1 : i;
+            float x, y, w, h;
+            buttonRect(i, x, y, w, h);
+            const float sc = 1 + 0.1f * fx_[i].hover.at(t) * (keyboardNav_ ? 0 : 1);
+            b.pushScaleAround(x + w / 2, y + h / 2, sc, ba);
+            if (const game::SkinSprite *s = stableSprite(slot)) {
+                b.quad(s->tex, x, y, w, h, col::white);
+            } else {
+                // Bande plate comme les panneaux du thème classique : léger dégradé, liseré fin.
+                const uint32_t cc = kCols[slot];
+                b.shadow(x, y + 4 * k, w, h, 8 * k, 16 * k, gfx::rgba(0, 0, 0, 120));
+                b.roundRectGradient(x, y, w, h, 8 * k, gfx::Corners::vertical(lighten(cc, 0.12f), darken(cc, 0.2f)));
+                b.roundRect(x, y, w, 2 * k, k, alpha(col::white, 0.3f));
+                b.roundRectBorder(x, y, w, h, 8 * k, 1.5f * k, alpha(col::white, 0.35f));
+                c.fonts->regular.drawShadow(b, x + w / 2, c.fonts->regular.topForCenter(y + h / 2, 54 * k), 54 * k, col::white, kLabels[slot],
+                                            gfx::Align::Center);
+            }
+            b.popTransform();
+        }
+        // Flèches de sélection (clavier / manette), qui battent de part et d'autre du bouton.
+        if (keyboardNav_ || !game.input().mouseActive) {
+            float x, y, w, h;
+            buttonRect(cursor_, x, y, w, h);
+            const float tri = static_cast<float>(std::fmod(t / 1000.0 * 3.2, 2.0));
+            const float a = 1 - (1 - (tri < 1 ? tri : 2 - tri)) * (1 - (tri < 1 ? tri : 2 - tri));
+            const float off = (20 + 45 * a) * 2.25f * k;
+            const float fly = anim::ease(Ease::In, static_cast<float>(std::clamp((t - menuAt_) / 300.0, 0.0, 1.0)));
+            const float ax = x - 170 * 2.25f * k * (1 - fly);
+            const uint32_t ac = gfx::rgba(0, 114, 255, static_cast<uint8_t>(255 * fly * d));
+            const float as = 70 * k;
+            b.triangle(ax - off - as * 0.35f, y + h / 2, as, ac, 0, anim::kPi / 2);
+            b.triangle(kVW - ax + off + as * 0.35f, y + h / 2, as, ac, 0, -anim::kPi / 2);
+        }
+        // Essais et progression.
+        char line[96];
+        snprintf(line, sizeof(line), i18n::tr("Essais : %d"), game.retryCount + 1);
+        c.fonts->regular.drawShadow(b, 20 * k, kVH - 44 * k, 22 * k, alpha(col::white, 0.8f * d), line);
+        snprintf(line, sizeof(line), i18n::tr("Progression : %.0f%%"), play_.progress() * 100);
+        c.fonts->regular.drawShadow(b, kVW - 20 * k, kVH - 44 * k, 22 * k, alpha(col::white, 0.8f * d), line, gfx::Align::Right);
+#if !defined(__PROSPERO__)
+        if (!failMenu_)
+            c.fonts->regular.drawShadow(b, kVW / 2, kVH - 44 * k, 18 * k, alpha(col::white, 0.55f * d), "Échap deux fois : quitter tout de suite",
+                                        gfx::Align::Center);
+#endif
+    }
 
     void renderMenu(float a) {
         Context &c = game.ctx;
         gfx::SpriteBatch &b = *c.batch;
+        if (stable()) {
+            renderMenuStable(a);
+            return;
+        }
         b.pushAlpha(a);
         b.rect(0, 0, kVW, kVH, alpha(col::black, 0.75f));
         const char *title = failMenu_ ? "échec" : "pause";
@@ -406,6 +515,8 @@ private:
     std::string error_, key_;
     bool started_ = false, leaving_ = false, failMenu_ = false;
     int cursor_ = 0;
+    bool keyboardNav_ = false;
+    double menuAt_ = 0;
     Tween menuA_{0}, fade_{0};
     ButtonFx fx_[3];
 };
@@ -693,4 +804,7 @@ private:
 
 std::unique_ptr<Screen> Game::makePlayerLoader() { return std::make_unique<PlayerLoader>(*this); }
 std::unique_ptr<Screen> Game::makePlay() { return std::make_unique<PlayScreen>(*this); }
-std::unique_ptr<Screen> Game::makeResults(const game::PlayResult &r) { return std::make_unique<Results>(*this, r); }
+std::unique_ptr<Screen> Game::makeResults(const game::PlayResult &r) {
+    if (settings_.uiTheme == 1) return makeStableResults(*this, r);
+    return std::make_unique<Results>(*this, r);
+}

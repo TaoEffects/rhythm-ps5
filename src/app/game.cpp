@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "app/game.h"
+#include "ui/stable_ui.h"
 #include "core/i18n.h"
 
 #include <time.h>
@@ -158,17 +159,8 @@ bool Game::init() {
     LOG("game: maps dans %s", ctx.songsDir.c_str());
 
     if (!batch_.init()) return false;
-    const std::string fonts = std::string(plat::assetsDir()) + "/fonts/";
-    // Outfit (OFL) ; Inter complète les symboles qu'Outfit n'a pas (★, ♪, ✕...).
-    const std::string fallback = fonts + "Inter-Regular.ttf";
-    fonts_.light.load(fonts + "Outfit-Light.ttf", fallback);
-    fonts_.regular.load(fonts + "Outfit-Regular.ttf", fallback);
-    fonts_.semibold.load(fonts + "Outfit-SemiBold.ttf", fallback);
-    fonts_.bold.load(fonts + "Outfit-Bold.ttf", fallback);
-    fonts_.icons.load(fonts + "FontAwesome-Solid.ttf", "", true);
-    // Caractères japonais (et chinois) : créés à la demande depuis Noto Sans JP.
-    if (cjk_.load(fonts + "NotoSansJP-Medium.ttf", 48, fonts_.regular.ascentPx()))
-        for (gfx::Font *f : {&fonts_.light, &fonts_.regular, &fonts_.semibold, &fonts_.bold}) f->setDynamicFallback(&cjk_);
+    loadFonts();
+    fonts_.icons.load(std::string(plat::assetsDir()) + "/fonts/FontAwesome-Solid.ttf", "", true);
     tex_.disc = gfx::makeHitCircle(256);
     {
         // Disque plein uni (le "hit circle" procédural a un bord blanc).
@@ -274,6 +266,7 @@ void Game::shutdown() {
     thumbs_.clear();
     cjk_.shutdown();
     fonts_.light.shutdown();
+    fonts_.italic.shutdown();
     fonts_.icons.shutdown();
     fonts_.regular.shutdown();
     fonts_.semibold.shutdown();
@@ -306,6 +299,30 @@ void Game::showSet(int set) {
     closeOverlay();
     if (screen_ && screen_->songSelect()) jumpToSet = set;
     else goTo(makeSongSelect());
+}
+
+// Polices de l'interface : Outfit pour le thème moderne, Source Sans 3 (proche de
+// la police de stable) pour le thème classique ; Inter complète les symboles
+// (★, ♪, ✕...) et Noto Sans JP les caractères japonais, créés à la demande.
+void Game::loadFonts() {
+    const std::string fonts = std::string(plat::assetsDir()) + "/fonts/";
+    const std::string fallback = fonts + "Inter-Regular.ttf";
+    const bool classic = settings_.uiTheme == 1;
+    for (gfx::Font *f : {&fonts_.light, &fonts_.regular, &fonts_.semibold, &fonts_.bold, &fonts_.italic}) f->shutdown();
+    fonts_.italic.load(fonts + "SourceSans3-SemiboldIt.ttf", fallback);
+    fonts_.light.load(fonts + (classic ? "SourceSans3-Light.ttf" : "Outfit-Light.ttf"), fallback);
+    fonts_.regular.load(fonts + (classic ? "SourceSans3-Regular.ttf" : "Outfit-Regular.ttf"), fallback);
+    fonts_.semibold.load(fonts + (classic ? "SourceSans3-Semibold.ttf" : "Outfit-SemiBold.ttf"), fallback);
+    fonts_.bold.load(fonts + (classic ? "SourceSans3-Bold.ttf" : "Outfit-Bold.ttf"), fallback);
+    // La police japonaise n'est chargée qu'une fois (4,6 Mo).
+    if (loadedFontTheme_ < 0 && !cjk_.load(fonts + "NotoSansJP-Medium.ttf", 48, fonts_.regular.ascentPx())) cjkFailed_ = true;
+    if (!cjkFailed_)
+        for (gfx::Font *f : {&fonts_.light, &fonts_.regular, &fonts_.semibold, &fonts_.bold, &fonts_.italic}) f->setDynamicFallback(&cjk_);
+    loadedFontTheme_ = settings_.uiTheme;
+}
+
+void Game::applyTheme() {
+    themeChanged_ = true;
 }
 
 void Game::closeOverlay() {
@@ -1069,6 +1086,12 @@ void Game::frame(const plat::InputState &raw, double now) {
     leaving_.erase(std::remove_if(leaving_.begin(), leaving_.end(), [&](const Leaving &l) { return nowMs >= l.until; }),
                    leaving_.end());
     if (overlayLeaving_ && nowMs >= overlayLeaveUntil_) overlayLeaving_.reset();
+    // Thème changé : une fois les options refermées, l'écran est recréé dans le nouveau style.
+    if (themeChanged_ && !overlay_ && screen_ && !screen_->gameplay()) {
+        themeChanged_ = false;
+        if (loadedFontTheme_ != settings_.uiTheme) loadFonts();
+        goTo(screen_->songSelect() ? makeSongSelect() : makeMainMenu(), false);
+    }
     logo.update(ctx, in);
     if (osk_.isOpen()) {
         // Clavier virtuel ouvert : il prend les entrées ; l'écran ne fait que l'attendre.
@@ -1115,7 +1138,10 @@ void Game::frame(const plat::InputState &raw, double now) {
         batch_.roundRect(x, 80, 8, 64, 4, gfx::withAlpha(lz::col::pink1, a));
         fonts_.semibold.draw(batch_, x + 32, 97, 28, gfx::withAlpha(lz::col::white, a), lastToast.c_str());
     }
-    if (screen_ && (!screen_->gameplay() || overlay_) && in.mouseActive) lz::cursor(ctx, in.mouseX, in.mouseY, (raw.mouse.buttons & 1u) != 0);
+    if (screen_ && (!screen_->gameplay() || overlay_) && in.mouseActive) {
+        if (settings_.uiTheme == 1) st::cursor(ctx, in.mouseX, in.mouseY, (raw.mouse.buttons & 1u) != 0);
+        else lz::cursor(ctx, in.mouseX, in.mouseY, (raw.mouse.buttons & 1u) != 0);
+    }
     if (settings_.showFps && !settings_.showDebug) {
         char fpsLine[32];
         snprintf(fpsLine, sizeof(fpsLine), "%.0f fps", fps_);

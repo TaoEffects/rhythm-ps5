@@ -21,6 +21,27 @@ struct SkinSprite {
     float h() const { return static_cast<float>(tex.height) * scale; }
 };
 
+// Éléments d'interface d'un skin, utilisés par le thème classique (stable) quand
+// le skin les fournit ; sinon le jeu les dessine lui-même.
+struct SkinUi {
+    SkinSprite scoreDigits[10], scoreComma, scoreDot, scorePercent, scoreX;
+    SkinSprite comboDigits[10], comboX;
+    int scoreOverlap = 0, comboOverlap = 0;
+    SkinSprite ranking[8], rankingSmall[8];  // XH SH X S A B C D
+    SkinSprite hit300g, hit100k;
+    SkinSprite pauseContinue, pauseRetry, pauseBack, pauseOverlay, failBackground;
+    SkinSprite menuBack;
+    SkinSprite selectionMode, selectionModeOver, selectionMods, selectionModsOver, selectionRandom, selectionRandomOver,
+        selectionOptions, selectionOptionsOver;
+    SkinSprite scorebarBg, scorebarColour;
+    SkinSprite rankingPanel, rankingPerfect, rankingTitle, rankingRetry, rankingReplay, rankingGraph, rankingMaxCombo,
+        rankingAccuracy;
+    std::vector<SkinSprite *> all();
+};
+
+// Index des lettres de rang dans SkinUi::ranking : SS argent, S argent, SS, S, A, B, C, D.
+int rankIndex(const std::string &rank, bool hidden);
+
 class Skin {
 public:
     ~Skin() { unload(); }
@@ -46,6 +67,7 @@ public:
     SkinSprite hit0, hit50, hit100, hit300;
     std::vector<SkinSprite> sliderb;
     SkinSprite digits[10];
+    SkinUi ui;
 
 private:
     SkinSprite sprite(const std::string &base);
@@ -55,7 +77,7 @@ private:
     std::string dir_, name_;
     std::vector<std::string> files_;  // noms réels (pour retrouver la casse)
     bool loaded_ = false;
-    std::string numberPrefix_ = "default";
+    std::string numberPrefix_ = "default", scorePrefix_ = "score", comboPrefix_;
 };
 
 // Importe les .osk du dossier (puis les retire) ; renvoie la liste des skins disponibles.

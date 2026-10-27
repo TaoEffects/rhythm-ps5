@@ -30,6 +30,9 @@ struct PlayResult {
     bool failed = false, completed = false;
     double unstableRate = 0, meanError = 0;
     double pp = 0, stars = 0;  // performance (calcul façon lazer) et étoiles avec mods
+    int nGeki = 0, nKatu = 0;  // combos terminés tout en 300 / en 300 et 100 (écran de classement stable)
+    bool fullCombo = false;
+    std::vector<float> hpGraph;  // vie après chaque objet jugé
     std::string rank;
     Mods mods;
 };
@@ -49,6 +52,8 @@ public:
     bool finished() const { return finished_; }
     bool failed() const { return failed_; }
     bool canSkip() const;
+    // Thème classique : le bouton « Passer » du coin bas droit est-il sous ce point ?
+    bool skipButtonHit(float x, float y) const;
     void skip(Context &ctx);
     const PlayResult &result() const { return result_; }
     const Beatmap &map() const { return map_; }
@@ -104,6 +109,7 @@ private:
     uint32_t comboColor(int index) const;
     void renderSliderBody(Context &ctx, const HitObject &o, float alpha, uint32_t color);
     void renderHud(Context &ctx, double t);
+    void renderHudStable(Context &ctx, double t);  // thème classique
     void renderSkinnedObject(Context &ctx, size_t i, double t, float alpha, uint32_t color);
     void renderSkinnedCursor(Context &ctx);
     void skinSprite(Context &ctx, const SkinSprite &sp, float cx, float cy, float scale, uint32_t color, float angle = 0) const;
@@ -136,6 +142,8 @@ private:
     int n300_ = 0, n100_ = 0, n50_ = 0, nMiss_ = 0;
     double comboPopTime_ = -10;
     float hp_ = 1.0f, displayHp_ = 1.0f;
+    double hpGainAt_ = -10;
+    std::vector<float> hpTrace_;  // dernière remontée de la vie (marqueur de la barre stable)
     float difficultyMultiplier_ = 2;
     std::vector<float> errors_;
     int keyCount_[2] = {0, 0};

@@ -1,5 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 #include "game/play.h"
+#include "ui/stable_ui.h"
 #include "game/storyboard.h"
 #include "core/i18n.h"
 
@@ -149,6 +150,7 @@ bool Play::start(Context &ctx, Beatmap map, const Mods &mods, const gfx::Texture
     combo_ = maxCombo_ = 0;
     n300_ = n100_ = n50_ = nMiss_ = 0;
     hp_ = displayHp_ = 1;
+    hpTrace_.clear();
     errors_.clear();
     popups_.clear();
     errorMarks_.clear();
@@ -248,9 +250,11 @@ void Play::judge(Context &ctx, size_t index, int result, double now, bool breaks
         hp_ -= 0.05f + 0.012f * hpSetting_;
     } else {
         hp_ += result == 300 ? 0.035f : (result == 100 ? 0.012f : 0.0f);
+        if (result >= 100) hpGainAt_ = now;
         addScore(result, o.type != kSlider);
     }
     hp_ = std::clamp(hp_, 0.0f, 1.0f);
+    hpTrace_.push_back(hp_);
     const Vec2 p = o.type == kSlider ? o.endPosition() : o.pos;
     if (result != 300 && !(ctx.settings->missesOnly && result != 0)) popups_.push_back(Popup{toScreenX(p.x), toScreenY(p.y), now, result});
 }
@@ -533,6 +537,24 @@ void Play::finishResult() {
     r.mods = mods_;
     r.pp = livePp();
     r.stars = timed_.empty() ? 0 : timed_.back().stars;
+    r.fullCombo = !failed_ && nMiss_ == 0 && !timed_.empty() && maxCombo_ >= timed_.back().maxCombo;
+    r.hpGraph = hpTrace_;
+    // Geki / katu : chaque section de combo (même couleur) entièrement en 300, ou en 300 et 100.
+    r.nGeki = r.nKatu = 0;
+    for (size_t i = 0; i < map_.objects.size();) {
+        size_t j = i + 1;
+        while (j < map_.objects.size() && !map_.objects[j].newCombo) ++j;
+        bool all300 = true, judged = true, ok = true;
+        for (size_t k = i; k < j; ++k) {
+            const State &s = state_[k];
+            if (!s.done) judged = false;
+            if (s.result != 300) all300 = false;
+            if (s.result != 300 && s.result != 100) ok = false;
+        }
+        if (judged && all300) ++r.nGeki;
+        else if (judged && ok) ++r.nKatu;
+        i = j;
+    }
     const int total = n300_ + n100_ + n50_ + nMiss_;
     r.accuracy = total > 0 ? (300.0 * n300_ + 100.0 * n100_ + 50.0 * n50_) / (300.0 * total) : 1.0;
     double mean = 0;
@@ -1016,6 +1038,10 @@ void Play::render(Context &ctx) {
 
 void Play::renderHud(Context &ctx, double t) {
     if (!ctx.settings->showHud) return;
+    if (ctx.settings->uiTheme == 1) {
+        renderHudStable(ctx, t);
+        return;
+    }
     gfx::SpriteBatch &b = *ctx.batch;
     const float dt = ctx.dt;
     displayScore_ = anim::approach(static_cast<float>(displayScore_), static_cast<float>(score_), dt, 0.06f);
@@ -1101,6 +1127,182 @@ void Play::renderHud(Context &ctx, double t) {
         const float pulse = 0.7f + 0.3f * std::sin(static_cast<float>(ctx.now) * 4);
         ctx.fonts->semibold.drawShadow(b, kVW - 40, kVH - 90, 34, gfx::withAlpha(gfx::rgba(255, 255, 255), pulse),
                                        "Triangle : passer l'intro →", gfx::Align::Right);
+    }
+    (void)t;
+}
+
+bool Play::skipButtonHit(float x, float y) const {
+    const float k = kVH / 480.0f;
+    const float w = 180 * k * 0.75f + 20 * k, h = 62 * k * 0.75f;
+    return x >= kVW - w - 4 * k && y >= kVH - h - 4 * k;
+}
+
+// Interface en jeu du thème classique, d'après stable (valeurs de McOsu, base 640x480).
+void Play::renderHudStable(Context &ctx, double t) {
+    gfx::SpriteBatch &b = *ctx.batch;
+    const float k = kVH / 480.0f;
+    const float dt = ctx.dt;
+    displayScore_ = anim::approach(static_cast<float>(displayScore_), static_cast<float>(score_), dt, 0.06f);
+    // Vie affichée : monte vite, descend plus doucement (comme stable).
+    displayHp_ += (hp_ - displayHp_) * std::min(1.0f, dt * 60 / (hp_ > displayHp_ ? 4.0f : 6.0f));
+    char line[64];
+    const uint32_t white = gfx::rgba(255, 255, 255);
+
+    // Vie (haut gauche) : barre sombre, remplissage dégradé, marqueur lumineux au bout.
+    {
+        const float bw = 434 * k, bh = 27.5f * k;
+        b.roundRect(-10 * k, -6 * k, bw + 10 * k, bh + 6 * k, 6 * k, gfx::rgba(10, 14, 28, 170));
+        b.roundRectBorder(-10 * k, -6 * k, bw + 10 * k, bh + 6 * k, 6 * k, 1.2f * k, gfx::rgba(255, 255, 255, 60));
+        const float fx = 7.5f * k, fy = 7.8f * k, fw = 403 * k, fh = 6.25f * k;
+        b.rect(fx, fy, fw, fh, gfx::rgba(0, 0, 0, 120));
+        const float hp = std::clamp(displayHp_, 0.0f, 1.0f);
+        // Teinte : normale au-dessus de 50 %, grisée en dessous, rouge sous 20 %.
+        uint32_t tint = white;
+        if (hp < 0.2f) tint = gfx::rgba(static_cast<uint8_t>(255 * (0.2f - hp) / 0.2f * 0.8f + 50), 30, 40);
+        else if (hp < 0.5f) {
+            const uint8_t v = static_cast<uint8_t>(255 * (0.4f + 0.6f * (hp - 0.2f) / 0.3f));
+            tint = gfx::rgba(v, v, v);
+        }
+        auto mul = [](uint32_t a, uint32_t m) {
+            auto ch = [&](int sh) { return static_cast<uint8_t>(((a >> sh) & 0xff) * ((m >> sh) & 0xff) / 255); };
+            return gfx::rgba(ch(0), ch(8), ch(16), static_cast<uint8_t>((a >> 24) & 0xff));
+        };
+        if (hp > 0) b.roundRectGradient(fx, fy, fw * hp, fh, fh / 2,
+                                        gfx::Corners::horizontal(mul(gfx::rgba(70, 200, 255), tint), mul(gfx::rgba(240, 250, 255), tint)));
+        if (hp >= 0.2f) {
+            const float pop = 0.8f + 0.4f * std::max(0.0f, 1 - static_cast<float>((ctx.now - hpGainAt_) / 0.15));
+            const float mx = fx + fw * hp, my = 10.625f * k;
+            b.setBlend(gfx::Blend::Additive);
+            b.centered(ctx.tex->glow, mx, my, 34 * k * pop, gfx::rgba(130, 210, 255, 200));
+            b.setBlend(gfx::Blend::Alpha);
+            b.circle(mx, my, 4.2f * k * pop, white);
+        }
+    }
+
+    // Score (haut droite, 8 chiffres), précision et camembert de progression.
+    const float scoreH = 24 * k;
+    snprintf(line, sizeof(line), "%08lld", static_cast<long long>(std::llround(displayScore_)));
+    st::number(ctx, line, kVW - 3 * k, 1 * k, scoreH, white, 2);
+    const int total = n300_ + n100_ + n50_ + nMiss_;
+    const double acc = total > 0 ? (300.0 * n300_ + 100.0 * n100_ + 50.0 * n50_) / (300.0 * total) * 100.0 : 100.0;
+    snprintf(line, sizeof(line), "%05.2f%%", acc);
+    const float accH = 15 * k, accY = scoreH + 5 * k;
+    const float accW = st::number(ctx, line, kVW - 3 * k, accY, accH, white, 2);
+    {
+        const float r = 10.5f * k * 0.85f;
+        const float cx = kVW - 3 * k - accW - r - 9 * k, cy = accY + accH / 2;
+        const bool lead = lastT_ < firstObject_;
+        const double frac = lead ? std::clamp(1 - (firstObject_ - lastT_) / std::max(1.0, firstObject_ - startTime_), 0.0, 1.0) : progress();
+        const uint32_t pc = lead ? gfx::rgba(0, 242, 0, 170) : gfx::rgba(242, 242, 242, 170);
+        b.circle(cx, cy, r * 1.3f, gfx::rgba(0, 0, 0, 90));
+        if (frac > 0.001) b.arc(cx, cy, r, r, 0, static_cast<float>(frac), gfx::Corners::solid(pc));
+        b.ring(cx, cy, r * 1.3f, 1.6f * k * 0.6f, white);
+        b.circle(cx, cy, 1.2f * k, white);
+    }
+    // Mods et compteur de pp sous la précision.
+    float hy = accY + accH + 8 * k;
+    const std::string mods = mods_.label();
+    if (!mods.empty()) {
+        float mx = kVW - 16 * k;
+        std::vector<std::string> list;
+        size_t p = 0;
+        while (p < mods.size()) {
+            size_t e = mods.find(' ', p);
+            if (e == std::string::npos) e = mods.size();
+            list.push_back(mods.substr(p, e - p));
+            p = e + 1;
+        }
+        for (size_t i = list.size(); i-- > 0;) {
+            const std::string &m = list[i];
+            const bool blue = m == "AUTO";
+            const bool red = m == "HR" || m == "DT" || m == "NC" || m == "HD";
+            lz::modIcon(ctx, blue ? "AT" : m.c_str(), mx, hy + 10 * k, 18 * k,
+                        blue ? lz::col::blue1 : red ? lz::col::red1 : lz::col::lime1);
+            mx -= 34 * k;
+        }
+        hy += 24 * k;
+    }
+    if (ctx.settings->showPpCounter) {
+        displayPp_ = anim::approach(displayPp_, static_cast<float>(livePp()), dt, 0.15f);
+        snprintf(line, sizeof(line), "%.0fpp", displayPp_);
+        ctx.fonts->semibold.drawShadow(b, kVW - 6 * k, hy, 11 * k, white, line, gfx::Align::Right);
+    }
+
+    // Combo (bas gauche) : rebond du chiffre et copie fantôme qui grossit derrière.
+    if (combo_ > 0) {
+        const float since = static_cast<float>(ctx.now - comboPopTime_);
+        const float a1 = std::min(2.0f, since / 0.075f);
+        const float p = a1 < 1 ? a1 : 2 - a1;
+        const float a2 = 1 - anim::ease(anim::Ease::Out, std::min(1.0f, since / 0.4f));
+        const float h = 34 * k;
+        snprintf(line, sizeof(line), "%dx", combo_);
+        if (a2 > 0.01f) {
+            const float hb = h * (1 + 0.5f * a2);
+            st::number(ctx, line, 5 * k, kVH - hb - 2 * k, hb, gfx::withAlpha(white, 0.65f * a2), 0, true);
+        }
+        const float hf = h * (1 + 0.075f * p * p);
+        st::number(ctx, line, 5 * k, kVH - hf - 2 * k, hf, white, 0, true);
+    }
+
+    // Barre d'erreur (bas centre) : bandes 50 / 100 / 300 imbriquées, frappes additives.
+    if (ctx.settings->showHitErrorBar) {
+        const float bw = 0.15f * kVW, bh = 0.007f * kVH, cy = kVH - 2.15f * bh;
+        const float cx = kVW / 2, half = bw / 2;
+        const float w50 = static_cast<float>(w50_);
+        auto band = [&](double win, uint32_t c) {
+            const float w = half * static_cast<float>(win) / w50;
+            b.rect(cx - w, cy - bh / 2, 2 * w, bh, c);
+        };
+        band(w50_, gfx::rgba(218, 174, 70));
+        band(w100_, gfx::rgba(87, 227, 19));
+        band(w300_, gfx::rgba(50, 188, 231));
+        const float eh = bh * 3.4f, ew = bh * 0.6f;
+        b.setBlend(gfx::Blend::Additive);
+        for (const ErrorMark &m : errorMarks_) {
+            const float f = 1 - anim::clamp01(static_cast<float>((ctx.now - m.time) / 4.0));
+            const float a = std::fabs(m.ms);
+            const uint32_t c = a <= w300_ ? gfx::rgba(50, 188, 231) : a <= w100_ ? gfx::rgba(87, 227, 19) : gfx::rgba(218, 174, 70);
+            b.rect(cx + std::clamp(m.ms / w50, -1.0f, 1.0f) * half - ew / 2, cy - eh / 2, ew, eh, gfx::withAlpha(c, 0.75f * f * f));
+        }
+        b.setBlend(gfx::Blend::Alpha);
+        while (!errorMarks_.empty() && ctx.now - errorMarks_.front().time > 4.0) errorMarks_.pop_front();
+        b.rect(cx - bh * 0.15f, cy - eh / 2, bh * 0.3f, eh, white);
+        if (ctx.settings->showUr && errors_.size() >= 2) {
+            double mean = 0, var = 0;
+            for (float e : errors_) mean += e;
+            mean /= static_cast<double>(errors_.size());
+            for (float e : errors_) var += (e - mean) * (e - mean);
+            snprintf(line, sizeof(line), "%.0f UR", std::sqrt(var / static_cast<double>(errors_.size())) * 10 / mods_.rate());
+            ctx.fonts->semibold.drawShadow(b, cx, cy - eh / 2 - 26 * kVH / 1080, 20 * kVH / 1080, gfx::rgba(255, 255, 255, 128), line,
+                                           gfx::Align::Center);
+        }
+    }
+
+    // Compteur de touches (bord droit) : touches jaunes quand enfoncées.
+    if (ctx.settings->keyOverlay && !mods_.autoplay) {
+        const float o = 1.401f * 1.6f * kVH / 1080 * 2.25f / 2.25f;
+        const float ks = 43 * o * 0.95f, y0 = kVH / 2 - 40 * o;
+        b.roundRect(kVW - 30 * o, y0, 40 * o, 80 * o, 6 * o, gfx::rgba(0, 0, 0, 110));
+        for (int i = 0; i < 2; ++i) {
+            const bool on = (keysHeld_ >> i) & 1u;
+            const float cx = kVW - 15 * o + 1, cy = y0 + (19 + 29.5f * static_cast<float>(i)) * o;
+            const float s = on ? 0.82f : 1.0f;
+            const float w = ks * 0.62f * s, h = ks * 0.62f * s;
+            b.roundRect(cx - w / 2, cy - h / 2, w, h, 5 * o, on ? gfx::rgba(255, 222, 0) : white);
+            snprintf(line, sizeof(line), "%d", keyCount_[i]);
+            ctx.fonts->semibold.drawMid(b, cx, cy, h * 0.42f, gfx::rgba(0, 0, 0), keyCount_[i] ? line : (i ? "K2" : "K1"), gfx::Align::Center);
+        }
+    }
+
+    // Bouton « Passer » (bas droite), qui pulse.
+    if (canSkip()) {
+        const float pulse = 0.75f + 0.25f * std::sin(static_cast<float>(ctx.now) * 5);
+        const float w = 180 * k * 0.75f, h = 62 * k * 0.75f, x = kVW - w - 24 * k, y = kVH - h - 4 * k;
+        b.roundRect(x, y, w + 20 * k, h, 10 * k, gfx::rgba(20, 20, 30, static_cast<uint8_t>(190 * pulse)));
+        b.roundRectBorder(x, y, w + 20 * k, h, 10 * k, 1.5f * k, gfx::withAlpha(white, 0.6f * pulse));
+        ctx.fonts->regular.drawMid(b, x + w * 0.45f, y + h / 2, 24 * k, gfx::withAlpha(white, pulse), "Passer", gfx::Align::Center);
+        ctx.fonts->regular.drawMid(b, x + w * 0.85f, y + h / 2, 24 * k, gfx::withAlpha(gfx::rgba(255, 204, 34), pulse), ">>",
+                                gfx::Align::Center);
     }
     (void)t;
 }

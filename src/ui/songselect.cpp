@@ -21,6 +21,7 @@
 #include "core/fsutil.h"
 #include "game/library.h"
 #include "ui/lz.h"
+#include "ui/stable.h"
 
 namespace {
 
@@ -1122,4 +1123,7 @@ private:
 
 }  // namespace
 
-std::unique_ptr<Screen> Game::makeSongSelect() { return std::make_unique<SongSelect>(*this); }
+std::unique_ptr<Screen> Game::makeSongSelect() {
+    if (settings_.uiTheme == 1) return makeStableSongSelect(*this);
+    return std::make_unique<SongSelect>(*this);
+}

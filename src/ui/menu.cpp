@@ -15,6 +15,7 @@
 #include "app/game.h"
 #include "game/library.h"
 #include "ui/lz.h"
+#include "ui/stable.h"
 
 namespace {
 
@@ -451,4 +452,7 @@ private:
 
 }  // namespace
 
-std::unique_ptr<Screen> Game::makeMainMenu() { return std::make_unique<MainMenu>(*this); }
+std::unique_ptr<Screen> Game::makeMainMenu() {
+    if (settings_.uiTheme == 1) return makeStableMainMenu(*this);
+    return std::make_unique<MainMenu>(*this);
+}
