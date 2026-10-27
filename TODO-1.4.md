@@ -11,6 +11,9 @@ Rien n'est publié avant ton feu vert.
 - [x] Clic sur les icônes de section : la liste défile jusqu'à la section (corrigé localement, pas encore publié).
 - [ ] Vérifier le reste à la souris et à la manette : retour, curseurs, assignation des touches.
 
+## Thème moderne : zones cliquables
+- [ ] Revoir la zone cliquable des boutons : elle ne couvre pas tout le bouton dessiné (pied de page de la sélection : Mods, Au hasard, Options ; à vérifier aussi sur les boutons inclinés du menu, le retour, la pause et les résultats). Faire correspondre la zone à la forme inclinée.
+
 ## Relecture et nettoyage du code (~20 000 lignes)
 - [ ] Compiler avec plus d'avertissements (-Wall -Wextra, clang -Wunused-member-function / -Wunused-private-field) et supprimer ce qui n'est pas utilisé : fonctions, membres, includes, réglages morts. Exemple déjà repéré : variable `col` inutilisée dans stable_menu.cpp.
 - [ ] Retirer le code commenté, les instructions qui ne font rien et les restes de débogage.
