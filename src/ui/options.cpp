@@ -162,9 +162,11 @@ public:
                 changed();
             }
         }
+        // Icônes de section : la liste défile jusqu'au titre de la section.
         for (size_t s = 0; s < sections_.size(); ++s)
             if (in.clicked(x0, sidebarY(static_cast<int>(s)), kSidebarW, kSidebarW)) {
                 cursor_ = sectionStart(sections_[s]);
+                target_ = std::clamp(rowY(cursor_) + scroll_ - contentTop() - 210 * lz::U, 0.0f, maxScroll());
                 c.play(c.sfx->uiSelect, 0.6f);
             }
         if (cursor_ != old) {
@@ -313,10 +315,7 @@ private:
     float sidebarY(int s) const { return contentTop() + 20 * lz::U + static_cast<float>(s) * kSidebarW; }
     float rowH(int i) const {
         const Kind k = items_[static_cast<size_t>(i)].kind;
-        float h = k == Kind::Toggle ? 40 * lz::U : k == Kind::Slider ? 52 * lz::U : 70 * lz::U;
-        // L'aide de l'élément choisi s'affiche dessous.
-        if (i == cursor_) h += 0;
-        return h;
+        return k == Kind::Toggle ? 40 * lz::U : k == Kind::Slider ? 52 * lz::U : 70 * lz::U;
     }
     float rowY(int i) const {
         float y = contentTop() + 130 * lz::U - scroll_;
