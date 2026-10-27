@@ -39,6 +39,13 @@ Rien n'est publié avant ton feu vert.
 - [ ] Ajouter les raccourcis d'osu! qui manquent : Ctrl+O (options), Ctrl+D (téléchargement), F2 au hasard / Maj+F2 retour arrière, Ctrl+Entrée (Auto), F1 mods, Échap, raccourcis du menu (P jouer, O options, E/Q quitter), Alt+molette volume, F7/F8 et lecteur de musique (Z X C V B), F12 capture, ajustement du décalage en jeu (+ / -), touche de pause, touche « recommencer rapidement » (` maintenue)...
 - [ ] Vérifier lesquels existent déjà, puis les rendre tous reprogrammables dans Options > Commandes (liste des raccourcis, saisie de la nouvelle touche, rétablir les valeurs par défaut).
 
+## Personnalisation des skins
+- [ ] Options de skin à la manière d'osu! : ignorer les couleurs de combo de la map (couleurs du skin seulement), ignorer les sons de la map (hitsounds du skin seulement), ignorer le skin de la map, choix de la couleur des combos, taille du curseur et de la traînée par skin, réglages des sliders (épaisseur du contour, couleur), etc.
+
+## Premier lancement : profil « classique » ou « pro »
+- [ ] Dans l'assistant de départ, choisir entre « classique » (réglages par défaut) et « pro ». Le profil « pro » met le fond noir au maximum, l'instafade, les ratés seuls, l'UR, le compteur de touches, la vidéo et le storyboard coupés, etc.
+- [ ] Profil « pro » : proposer de télécharger des skins « pro » connus (WhiteCat, Rafis, mrekk...). À vérifier avant : chaque skin appartient à son auteur, il faut une source et une autorisation de redistribution (lien officiel de l'auteur, sinon simple lien vers la page du skin plutôt qu'un téléchargement intégré).
+
 ## Rendu des skins osu! en jeu
 - [ ] Revoir l'implémentation complète des skins : interface en jeu (score, combo, barre de vie, précision, jugements) avec les images du skin, et les effets (éclatement des cercles, lumières de frappe, sliders, spinners, curseur et traînée), en comparant avec stable.
 
