@@ -32,6 +32,13 @@ Rien n'est publié avant ton feu vert.
 - [ ] Importer aussi les .osk et .osz déposés dans le dossier des maps.
 - [ ] Mesurer le temps de chargement d'un skin (beaucoup d'images) et ne charger les éléments d'interface que si le thème classique est actif.
 
+## Rendu des skins osu! en jeu
+- [ ] Revoir l'implémentation complète des skins : interface en jeu (score, combo, barre de vie, précision, jugements) avec les images du skin, et les effets (éclatement des cercles, lumières de frappe, sliders, spinners, curseur et traînée), en comparant avec stable.
+
+## Paramètres : animations
+- [ ] Animer les éléments qui coulissent : interrupteurs, curseurs, valeurs des choix, ouverture des sections.
+- [ ] Repérer ce qui change encore sans animation (survol, sélection, passage d'une section à l'autre, assignation d'une touche) et l'animer.
+
 ## Changement de thème
 - [ ] Bascule immédiate, sans fermer les options, avec un fondu (sortie / entrée).
 - [ ] Recharger les polices sans saccade et vérifier qu'aucun texte n'utilise l'ancienne police pendant une image.
