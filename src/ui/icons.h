@@ -19,6 +19,7 @@ constexpr const char *arrow_left = "\xe2\x86\x90";
 constexpr const char *shuffle = "\xef\x81\xb4";
 constexpr const char *wand_magic_sparkles = "\xee\x8b\x8a";
 constexpr const char *circle = "\xe2\x97\x8f";
+constexpr const char *circle_dot = "\xef\x86\x92";
 constexpr const char *chevron_left = "\xe2\x8c\xa9";
 constexpr const char *chevron_right = "\xe2\x8c\xaa";
 constexpr const char *chevron_down = "\xef\x81\xb8";

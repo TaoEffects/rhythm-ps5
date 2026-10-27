@@ -30,6 +30,7 @@ inline void setVirtualAspect(float aspect) {
 
 struct Fonts {
     gfx::Font light, regular, semibold, bold;
+    gfx::Font italic;  // Source Sans 3 demi-gras italique (thème classique)
     gfx::Font icons;  // Font Awesome Free (voir ui/icons.h)
 };
 

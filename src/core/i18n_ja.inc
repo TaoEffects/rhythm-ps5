@@ -283,3 +283,6 @@
 {"Tablette : écran = aire de jeu", "タブレット：画面＝プレイエリア"},
 {"Toute la surface de la tablette (ou de l'écran) correspond à l'aire de jeu, comme le pavé tactile en absolu. Pratique avec une tablette graphique sans réglage de zone.", "タブレット（または画面）の全面がプレイエリアに対応します。タッチパッドの絶対モードと同様。エリア設定のないペンタブに便利です。"},
 {"Échap deux fois : quitter tout de suite", "Esc を2回押すとすぐに終了"},
+{"Moderne : menus inspirés d'osu!lazer. Classique : menus disposés comme ceux d'osu!stable (menu, sélection de map, résultats, pause, interface en jeu).", "モダン：osu!lazer 風のメニュー。クラシック：osu!stable と同じ配置のメニュー（メインメニュー、選曲、リザルト、ポーズ、プレイ中の表示）。"},
+{"Classique (stable)", "クラシック（stable）"},
+{"Passer", "スキップ"},

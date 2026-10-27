@@ -189,6 +189,14 @@ void Skin::parseIni(const std::string &text) {
                     if (ch == '\\') ch = '/';
             }
             if (key == "HitCircleOverlap") hitCircleOverlap = atoi(value.c_str());
+            if (key == "ScorePrefix" || key == "ComboPrefix") {
+                std::string &p = key == "ScorePrefix" ? scorePrefix_ : comboPrefix_;
+                p = value;
+                for (char &ch : p)
+                    if (ch == '\\') ch = '/';
+            }
+            if (key == "ScoreOverlap") ui.scoreOverlap = atoi(value.c_str());
+            if (key == "ComboOverlap") ui.comboOverlap = atoi(value.c_str());
         }
     }
     std::sort(combos.begin(), combos.end());
@@ -246,10 +254,80 @@ bool Skin::load(const std::string &dir, const std::string &name) {
         if (s.ok()) sliderb.push_back(s);
     }
     for (int i = 0; i < 10; ++i) digits[i] = sprite(numberPrefix_ + "-" + std::to_string(i));
+    // Interface (thème classique).
+    if (comboPrefix_.empty()) comboPrefix_ = scorePrefix_;
+    for (int i = 0; i < 10; ++i) {
+        ui.scoreDigits[i] = sprite(scorePrefix_ + "-" + std::to_string(i));
+        ui.comboDigits[i] = sprite(comboPrefix_ + "-" + std::to_string(i));
+    }
+    ui.scoreComma = sprite(scorePrefix_ + "-comma");
+    ui.scoreDot = sprite(scorePrefix_ + "-dot");
+    ui.scorePercent = sprite(scorePrefix_ + "-percent");
+    ui.scoreX = sprite(scorePrefix_ + "-x");
+    ui.comboX = sprite(comboPrefix_ + "-x");
+    static const char *const kRankNames[8] = {"XH", "SH", "X", "S", "A", "B", "C", "D"};
+    for (int i = 0; i < 8; ++i) {
+        ui.ranking[i] = sprite(std::string("ranking-") + kRankNames[i]);
+        ui.rankingSmall[i] = sprite(std::string("ranking-") + kRankNames[i] + "-small");
+    }
+    ui.hit300g = sprite("hit300g");
+    if (!ui.hit300g.ok()) ui.hit300g = sprite("hit300g-0");
+    ui.hit100k = sprite("hit100k");
+    if (!ui.hit100k.ok()) ui.hit100k = sprite("hit100k-0");
+    ui.pauseContinue = sprite("pause-continue");
+    ui.pauseRetry = sprite("pause-retry");
+    ui.pauseBack = sprite("pause-back");
+    ui.pauseOverlay = sprite("pause-overlay");
+    ui.failBackground = sprite("fail-background");
+    ui.menuBack = sprite("menu-back");
+    if (!ui.menuBack.ok()) ui.menuBack = sprite("menu-back-0");
+    ui.selectionMode = sprite("selection-mode");
+    ui.selectionModeOver = sprite("selection-mode-over");
+    ui.selectionMods = sprite("selection-mods");
+    ui.selectionModsOver = sprite("selection-mods-over");
+    ui.selectionRandom = sprite("selection-random");
+    ui.selectionRandomOver = sprite("selection-random-over");
+    ui.selectionOptions = sprite("selection-options");
+    ui.selectionOptionsOver = sprite("selection-options-over");
+    ui.scorebarBg = sprite("scorebar-bg");
+    ui.scorebarColour = sprite("scorebar-colour");
+    if (!ui.scorebarColour.ok()) ui.scorebarColour = sprite("scorebar-colour-0");
+    ui.rankingPanel = sprite("ranking-panel");
+    ui.rankingPerfect = sprite("ranking-perfect");
+    ui.rankingTitle = sprite("ranking-title");
+    ui.rankingRetry = sprite("ranking-retry");
+    ui.rankingReplay = sprite("ranking-replay");
+    ui.rankingGraph = sprite("ranking-graph");
+    ui.rankingMaxCombo = sprite("ranking-maxcombo");
+    ui.rankingAccuracy = sprite("ranking-accuracy");
     loaded_ = hitcircle.ok() || approachcircle.ok() || cursor.ok();
     LOG("skin: %s charge (cercle %d, chiffres %d, curseur %d, %zu couleurs)", name.c_str(), hitcircle.ok(), digits[0].ok(),
         cursor.ok(), comboColours.size());
     return loaded_;
+}
+
+std::vector<SkinSprite *> SkinUi::all() {
+    std::vector<SkinSprite *> v;
+    for (SkinSprite &s : scoreDigits) v.push_back(&s);
+    for (SkinSprite &s : comboDigits) v.push_back(&s);
+    for (SkinSprite &s : ranking) v.push_back(&s);
+    for (SkinSprite &s : rankingSmall) v.push_back(&s);
+    for (SkinSprite *s : {&scoreComma, &scoreDot, &scorePercent, &scoreX, &comboX, &hit300g, &hit100k, &pauseContinue, &pauseRetry,
+                          &pauseBack, &pauseOverlay, &failBackground, &menuBack, &selectionMode, &selectionModeOver, &selectionMods,
+                          &selectionModsOver, &selectionRandom, &selectionRandomOver, &selectionOptions, &selectionOptionsOver,
+                          &scorebarBg, &scorebarColour, &rankingPanel, &rankingPerfect, &rankingTitle, &rankingRetry, &rankingReplay,
+                          &rankingGraph, &rankingMaxCombo, &rankingAccuracy})
+        v.push_back(s);
+    return v;
+}
+
+int rankIndex(const std::string &rank, bool hidden) {
+    if (rank == "SS") return hidden ? 0 : 2;
+    if (rank == "S") return hidden ? 1 : 3;
+    if (rank == "A") return 4;
+    if (rank == "B") return 5;
+    if (rank == "C") return 6;
+    return 7;
 }
 
 void Skin::unload() {
@@ -261,6 +339,10 @@ void Skin::unload() {
     for (SkinSprite &s : sliderb) gfx::destroyTexture(s.tex);
     sliderb.clear();
     for (SkinSprite &s : digits) gfx::destroyTexture(s.tex);
+    for (SkinSprite *s : ui.all()) gfx::destroyTexture(s->tex);
+    ui = SkinUi{};
+    scorePrefix_ = "score";
+    comboPrefix_.clear();
     comboColours.clear();
     files_.clear();
     sliderBorder = 0xFFFFFFFFu;

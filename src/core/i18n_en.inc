@@ -283,3 +283,6 @@
 {"Tablette : écran = aire de jeu", "Tablet: screen = playfield"},
 {"Toute la surface de la tablette (ou de l'écran) correspond à l'aire de jeu, comme le pavé tactile en absolu. Pratique avec une tablette graphique sans réglage de zone.", "The whole tablet (or screen) surface maps to the playfield, like the touchpad in absolute mode. Handy with a graphics tablet without an area setting."},
 {"Échap deux fois : quitter tout de suite", "Press Esc twice to quit right away"},
+{"Moderne : menus inspirés d'osu!lazer. Classique : menus disposés comme ceux d'osu!stable (menu, sélection de map, résultats, pause, interface en jeu).", "Modern: menus inspired by osu!lazer. Classic: menus laid out like osu!stable's (main menu, song select, results, pause, in-game HUD)."},
+{"Classique (stable)", "Classic (stable)"},
+{"Passer", "Skip"},

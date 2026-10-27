@@ -506,10 +506,15 @@ private:
         toggle("Affichage", "Compteur de touches", "Affiche à droite le nombre de frappes de chaque touche (K1, K2).", s.keyOverlay);
         slider("Interface", "Taille de l'interface", "Agrandit ou réduit les menus (80 à 130 %).", s.uiScale, 0.8f, 1.3f, 0.05f,
                [&s] { return pct(s.uiScale); });
-        items_.push_back({"Interface", "Thème", "Le thème moderne s'inspire d'osu!lazer. Les thèmes « stable » et « classique » "
-                          "arrivent bientôt.",
-                          Kind::Choice, [] { return std::string("Moderne (lazer)"); },
-                          [this](int) { game.toast("Les thèmes « stable » et « classique » arrivent bientôt"); }, nullptr, nullptr});
+        items_.push_back({"Interface", "Thème",
+                          "Moderne : menus inspirés d'osu!lazer. Classique : menus disposés comme ceux d'osu!stable "
+                          "(menu, sélection de map, résultats, pause, interface en jeu).",
+                          Kind::Choice, [&s] { return std::string(s.uiTheme == 1 ? "Classique (stable)" : "Moderne (lazer)"); },
+                          [this, &s](int) {
+                              s.uiTheme = s.uiTheme == 1 ? 0 : 1;
+                              game.applyTheme();
+                          },
+                          nullptr, nullptr});
         items_.push_back({"Interface", "Langue", "Langue de l'interface.", Kind::Choice,
                           [&s] {
                               return std::string(s.language == 1   ? "Français"
